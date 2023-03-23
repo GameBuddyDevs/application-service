@@ -1,8 +1,9 @@
 package com.back2261.applicationservice.config;
 
-import com.back2261.applicationservice.exception.BusinessException;
 import com.back2261.applicationservice.infrastructure.repository.GamerRepository;
-import com.back2261.applicationservice.interfaces.enums.TransactionCode;
+import io.github.GameBuddyDevs.backendlibrary.enums.TransactionCode;
+import io.github.GameBuddyDevs.backendlibrary.exception.BusinessException;
+import io.github.GameBuddyDevs.backendlibrary.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,5 +44,10 @@ public class ApplicationConfig {
     @Bean
     public PasswordEncoder encoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public JwtService jwtService() {
+        return new JwtService();
     }
 }
