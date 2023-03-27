@@ -54,7 +54,7 @@ task integrationTest(type: Test) {
 }
 
 dependencies {
-	implementation 'io.github.GameBuddyDevs:backend-library:0.0.2-SNAPSHOT'
+	implementation 'io.github.GameBuddyDevs:backend-library:0.0.3-SNAPSHOT'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'

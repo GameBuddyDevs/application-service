@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://l2.eren.wtf:5432/gamebuddydb
-    username: gamebuddy
-    password: 3uT4}dpjK2PUk2#n
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -16,12 +16,9 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 
-jwt:
-  secret: 4B6250655368566D5970337336763979244226452948404D635166546A576E5A
-
 springdoc:
   swagger-ui:
-    path: /swagger-ui
+    path: ${SPRINGDOC_SWAGGER_UI_PATH}
   api-docs:
     path: /api-docs
 

@@ -63,13 +63,7 @@ public class DefaultApplicationService implements ApplicationService {
         List<GamerDto> friendDtoList = new ArrayList<>();
         Gamer gamer = extractGamer(token);
         Set<Gamer> friends = gamer.getFriends();
-        mapFriendsToDto(friends, friendDtoList);
-        FriendsResponse friendsResponse = new FriendsResponse();
-        FriendsResponseBody body = new FriendsResponseBody();
-        body.setFriends(friendDtoList);
-        friendsResponse.setBody(new BaseBody<>(body));
-        friendsResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
-        return friendsResponse;
+        return getFriendsResponse(friendDtoList, friends);
     }
 
     @Override
@@ -77,13 +71,7 @@ public class DefaultApplicationService implements ApplicationService {
         List<GamerDto> friendDtoList = new ArrayList<>();
         Gamer gamer = extractGamer(token);
         Set<Gamer> waitingFriends = gamer.getWaitingFriends();
-        mapFriendsToDto(waitingFriends, friendDtoList);
-        FriendsResponse friendsResponse = new FriendsResponse();
-        FriendsResponseBody body = new FriendsResponseBody();
-        body.setFriends(friendDtoList);
-        friendsResponse.setBody(new BaseBody<>(body));
-        friendsResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
-        return friendsResponse;
+        return getFriendsResponse(friendDtoList, waitingFriends);
     }
 
     @Override
@@ -91,13 +79,7 @@ public class DefaultApplicationService implements ApplicationService {
         List<GamerDto> friendDtoList = new ArrayList<>();
         Gamer gamer = extractGamer(token);
         Set<Gamer> blockedFriend = gamer.getBlockedFriends();
-        mapFriendsToDto(blockedFriend, friendDtoList);
-        FriendsResponse friendsResponse = new FriendsResponse();
-        FriendsResponseBody body = new FriendsResponseBody();
-        body.setFriends(friendDtoList);
-        friendsResponse.setBody(new BaseBody<>(body));
-        friendsResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
-        return friendsResponse;
+        return getFriendsResponse(friendDtoList, blockedFriend);
     }
 
     @Override
@@ -111,11 +93,11 @@ public class DefaultApplicationService implements ApplicationService {
         Set<Gamer> waitingFriends = gamer.getWaitingFriends();
         Set<Gamer> myFriends = gamer.getFriends();
         if (myFriends.stream().anyMatch(friend -> friend.getUserId().equals(id))) {
-            throw new BusinessException(TransactionCode.DB_ERROR); // FRIEND_ALREADY diye code
+            throw new BusinessException(TransactionCode.FRIEND_ALREADY_EXISTS);
         }
         if (waitingFriends.stream()
                 .noneMatch(waitingFriend -> waitingFriend.getUserId().equals(id))) {
-            throw new BusinessException(TransactionCode.DB_ERROR); // FRIEND_NO_REQUEST diye code
+            throw new BusinessException(TransactionCode.FRIEND_NO_REQUEST);
         }
         Gamer user = userOptional.get();
 
@@ -144,7 +126,7 @@ public class DefaultApplicationService implements ApplicationService {
 
         if (waitingFriends.stream()
                 .noneMatch(waitingFriend -> waitingFriend.getUserId().equals(id))) {
-            throw new BusinessException(TransactionCode.DB_ERROR); // FRIEND_NO_REQUEST diye code
+            throw new BusinessException(TransactionCode.FRIEND_NO_REQUEST);
         }
         Gamer user = userOptional.get();
         gamer.getWaitingFriends().remove(user);
@@ -167,7 +149,7 @@ public class DefaultApplicationService implements ApplicationService {
         }
 
         if (gamer.getFriends().stream().noneMatch(friend -> friend.getUserId().equals(id))) {
-            throw new BusinessException(TransactionCode.DB_ERROR); // USER_NOT_FRIEND diye code
+            throw new BusinessException(TransactionCode.FRIEND_NOT_FOUND);
         }
 
         Gamer friend = friendOptional.get();
@@ -195,7 +177,7 @@ public class DefaultApplicationService implements ApplicationService {
 
         if (gamer.getBlockedFriends().stream()
                 .anyMatch(friend -> friend.getUserId().equals(id))) {
-            throw new BusinessException(TransactionCode.DB_ERROR); // USER_ALREADY_BLOCKED diye code
+            throw new BusinessException(TransactionCode.USER_ALREADY_BLOCKED);
         }
 
         if (gamer.getFriends().stream().anyMatch(friend -> friend.getUserId().equals(id))) {
@@ -230,7 +212,7 @@ public class DefaultApplicationService implements ApplicationService {
         Gamer user = userOptional.get();
         if (gamer.getBlockedFriends().stream()
                 .noneMatch(friend -> friend.getUserId().equals(id))) {
-            throw new BusinessException(TransactionCode.DB_ERROR); // USER_NOT_BLOCKED diye code
+            throw new BusinessException(TransactionCode.USER_NOT_BLOCKED);
         }
 
         gamer.getBlockedFriends().remove(user);
@@ -251,27 +233,47 @@ public class DefaultApplicationService implements ApplicationService {
         if (userOptional.isEmpty()) {
             throw new BusinessException(TransactionCode.USER_NOT_FOUND);
         }
-        Gamer user = userOptional.get();
-        if (user.getWaitingFriends().stream()
-                .anyMatch(waitingFriend -> waitingFriend.getUserId().equals(gamer.getUserId()))) {
-            throw new BusinessException(TransactionCode.DB_ERROR); // SENT_REQUEST_ALREADY diye code
-        }
 
+        Gamer user = userOptional.get();
         if (user.getBlockedFriends().stream()
                 .anyMatch(blockedFriend -> blockedFriend.getUserId().equals(gamer.getUserId()))) {
-            throw new BusinessException(
-                    TransactionCode.DB_ERROR); // USER_BLOCKED diye code "istek atamazsın seni blocklamış"
+            throw new BusinessException(TransactionCode.USER_BLOCKED_YOU);
         }
+
+        if (gamer.getBlockedFriends().stream()
+                .anyMatch(blockedFriend -> blockedFriend.getUserId().equals(user.getUserId()))) {
+            throw new BusinessException(TransactionCode.USER_BLOCKED);
+        }
+
+        if (user.getFriends().stream().anyMatch(friend -> friend.getUserId().equals(gamer.getUserId()))) {
+            throw new BusinessException(TransactionCode.ALREADY_FRIENDS);
+        }
+
+        if (user.getWaitingFriends().stream()
+                .anyMatch(waitingFriend -> waitingFriend.getUserId().equals(gamer.getUserId()))) {
+            throw new BusinessException(TransactionCode.ALREADY_SENT_REQUEST);
+        }
+
         user.getWaitingFriends().add(gamer);
         gamerRepository.save(user);
 
-        // TODO: Notification gönderilecek
+        // TODO: Notification gönderilecek user a
 
         DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
         DefaultMessageBody body = new DefaultMessageBody("Friend request sent successfully");
         defaultMessageResponse.setBody(new BaseBody<>(body));
         defaultMessageResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return defaultMessageResponse;
+    }
+
+    private FriendsResponse getFriendsResponse(List<GamerDto> friendDtoList, Set<Gamer> friends) {
+        mapFriendsToDto(friends, friendDtoList);
+        FriendsResponse friendsResponse = new FriendsResponse();
+        FriendsResponseBody body = new FriendsResponseBody();
+        body.setFriends(friendDtoList);
+        friendsResponse.setBody(new BaseBody<>(body));
+        friendsResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return friendsResponse;
     }
 
     private Gamer extractGamer(String token) {
