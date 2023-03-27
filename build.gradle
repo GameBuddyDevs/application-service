@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'java-library'
 	id 'org.springframework.boot' version '3.0.4'
 	id 'io.spring.dependency-management' version '1.1.0'
 	id 'jacoco'
@@ -24,6 +25,9 @@ configurations {
 
 repositories {
 	mavenCentral()
+	maven {
+		url 'https://s01.oss.sonatype.org/content/repositories/snapshots'
+	}
 }
 
 configurations {
@@ -50,12 +54,20 @@ task integrationTest(type: Test) {
 }
 
 dependencies {
+	implementation 'io.github.GameBuddyDevs:backend-library:0.0.3-SNAPSHOT'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'javax.xml.bind:jaxb-api:2.3.1'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
+
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
