@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://l2.eren.wtf:5432/gamebuddydb
+    username: gamebuddy
+    password: 3uT4}dpjK2PUk2#n
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: schappl
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/application
+  api-docs:
+    path: /api-docs
+
+server:
+  port: 4567
+
