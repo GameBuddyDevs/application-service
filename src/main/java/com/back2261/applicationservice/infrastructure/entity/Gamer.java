@@ -42,7 +42,6 @@ public class Gamer implements UserDetails {
     private String pwd;
     private String gender;
     private Boolean isBlocked = false;
-    private Boolean isRegistered = false;
 
     @ManyToMany
     @JoinTable(
@@ -51,8 +50,6 @@ public class Gamer implements UserDetails {
             joinColumns = @JoinColumn(name = "gamer_id"),
             inverseJoinColumns = @JoinColumn(name = "keyword_id"))
     private Set<Keywords> keywords;
-
-    private Boolean isVerified = false;
 
     @ManyToMany
     @JoinTable(

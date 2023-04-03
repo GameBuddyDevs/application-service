@@ -86,10 +86,7 @@ public class DefaultApplicationService implements ApplicationService {
     public DefaultMessageResponse acceptFriend(FriendRequest addFriendRequest, String token) {
         String id = addFriendRequest.getUserId();
         Gamer gamer = extractGamer(token);
-        Optional<Gamer> userOptional = gamerRepository.findById(id);
-        if (userOptional.isEmpty()) {
-            throw new BusinessException(TransactionCode.USER_NOT_FOUND);
-        }
+        Gamer user = getGamerFromId(id);
         Set<Gamer> waitingFriends = gamer.getWaitingFriends();
         Set<Gamer> myFriends = gamer.getFriends();
         if (myFriends.stream().anyMatch(friend -> friend.getUserId().equals(id))) {
@@ -99,7 +96,6 @@ public class DefaultApplicationService implements ApplicationService {
                 .noneMatch(waitingFriend -> waitingFriend.getUserId().equals(id))) {
             throw new BusinessException(TransactionCode.FRIEND_NO_REQUEST);
         }
-        Gamer user = userOptional.get();
 
         waitingFriends.remove(user);
         myFriends.add(user);
@@ -118,17 +114,14 @@ public class DefaultApplicationService implements ApplicationService {
     public DefaultMessageResponse rejectFriend(FriendRequest rejectFriendRequest, String token) {
         String id = rejectFriendRequest.getUserId();
         Gamer gamer = extractGamer(token);
-        Optional<Gamer> userOptional = gamerRepository.findById(id);
-        if (userOptional.isEmpty()) {
-            throw new BusinessException(TransactionCode.USER_NOT_FOUND);
-        }
+        Gamer user = getGamerFromId(id);
         Set<Gamer> waitingFriends = gamer.getWaitingFriends();
 
         if (waitingFriends.stream()
                 .noneMatch(waitingFriend -> waitingFriend.getUserId().equals(id))) {
             throw new BusinessException(TransactionCode.FRIEND_NO_REQUEST);
         }
-        Gamer user = userOptional.get();
+
         gamer.getWaitingFriends().remove(user);
         gamerRepository.save(gamer);
 
@@ -143,16 +136,12 @@ public class DefaultApplicationService implements ApplicationService {
     public DefaultMessageResponse removeFriend(FriendRequest removeFriendRequest, String token) {
         String id = removeFriendRequest.getUserId();
         Gamer gamer = extractGamer(token);
-        Optional<Gamer> friendOptional = gamerRepository.findById(id);
-        if (friendOptional.isEmpty()) {
-            throw new BusinessException(TransactionCode.USER_NOT_FOUND);
-        }
+        Gamer friend = getGamerFromId(id);
 
-        if (gamer.getFriends().stream().noneMatch(friend -> friend.getUserId().equals(id))) {
+        if (gamer.getFriends().stream().noneMatch(friend1 -> friend1.getUserId().equals(id))) {
             throw new BusinessException(TransactionCode.FRIEND_NOT_FOUND);
         }
 
-        Gamer friend = friendOptional.get();
         gamer.getFriends().remove(friend);
         gamerRepository.save(gamer);
         friend.getFriends().remove(gamer);
@@ -169,11 +158,7 @@ public class DefaultApplicationService implements ApplicationService {
     public DefaultMessageResponse blockUser(FriendRequest blockFriendRequest, String token) {
         String id = blockFriendRequest.getUserId();
         Gamer gamer = extractGamer(token);
-        Optional<Gamer> userOptional = gamerRepository.findById(id);
-        if (userOptional.isEmpty()) {
-            throw new BusinessException(TransactionCode.USER_NOT_FOUND);
-        }
-        Gamer user = userOptional.get();
+        Gamer user = getGamerFromId(id);
 
         if (gamer.getBlockedFriends().stream()
                 .anyMatch(friend -> friend.getUserId().equals(id))) {
@@ -205,11 +190,7 @@ public class DefaultApplicationService implements ApplicationService {
     public DefaultMessageResponse unblockUser(FriendRequest unblockFriendRequest, String token) {
         String id = unblockFriendRequest.getUserId();
         Gamer gamer = extractGamer(token);
-        Optional<Gamer> userOptional = gamerRepository.findById(id);
-        if (userOptional.isEmpty()) {
-            throw new BusinessException(TransactionCode.USER_NOT_FOUND);
-        }
-        Gamer user = userOptional.get();
+        Gamer user = getGamerFromId(id);
         if (gamer.getBlockedFriends().stream()
                 .noneMatch(friend -> friend.getUserId().equals(id))) {
             throw new BusinessException(TransactionCode.USER_NOT_BLOCKED);
@@ -229,12 +210,8 @@ public class DefaultApplicationService implements ApplicationService {
     public DefaultMessageResponse sendFriendRequest(FriendRequest sendRequest, String token) {
         String id = sendRequest.getUserId();
         Gamer gamer = extractGamer(token);
-        Optional<Gamer> userOptional = gamerRepository.findById(id);
-        if (userOptional.isEmpty()) {
-            throw new BusinessException(TransactionCode.USER_NOT_FOUND);
-        }
+        Gamer user = getGamerFromId(id);
 
-        Gamer user = userOptional.get();
         if (user.getBlockedFriends().stream()
                 .anyMatch(blockedFriend -> blockedFriend.getUserId().equals(gamer.getUserId()))) {
             throw new BusinessException(TransactionCode.USER_BLOCKED_YOU);
@@ -279,6 +256,14 @@ public class DefaultApplicationService implements ApplicationService {
     private Gamer extractGamer(String token) {
         String email = jwtService.extractUsername(token);
         Optional<Gamer> gamerOptional = gamerRepository.findByEmail(email);
+        if (gamerOptional.isEmpty()) {
+            throw new BusinessException(TransactionCode.USER_NOT_FOUND);
+        }
+        return gamerOptional.get();
+    }
+
+    private Gamer getGamerFromId(String id) {
+        Optional<Gamer> gamerOptional = gamerRepository.findById(id);
         if (gamerOptional.isEmpty()) {
             throw new BusinessException(TransactionCode.USER_NOT_FOUND);
         }
