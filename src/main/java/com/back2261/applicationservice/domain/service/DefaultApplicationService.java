@@ -52,7 +52,13 @@ public class DefaultApplicationService implements ApplicationService {
         List<Games> gamesList = gamesRepository.findAll();
         GamesResponse gamesResponse = new GamesResponse();
         GamesResponseBody body = new GamesResponseBody();
-        body.setGames(gamesList);
+        List<GamesDto> gamesDtoList = new ArrayList<>();
+        gamesList.forEach(games -> {
+            GamesDto gamesDto = new GamesDto();
+            BeanUtils.copyProperties(games, gamesDto);
+            gamesDtoList.add(gamesDto);
+        });
+        body.setGames(gamesDtoList);
         gamesResponse.setBody(new BaseBody<>(body));
         gamesResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return gamesResponse;

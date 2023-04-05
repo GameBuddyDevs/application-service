@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.back2261.applicationservice.domain.service.DefaultApplicationService;
-import com.back2261.applicationservice.infrastructure.entity.Games;
 import com.back2261.applicationservice.interfaces.dto.*;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
 import com.back2261.applicationservice.interfaces.response.FriendsResponse;
@@ -99,9 +98,16 @@ class ApplicationControllerTest {
     void testGetGames_whenRequested_shouldReturnGames() throws Exception {
         GamesResponse gamesResponse = new GamesResponse();
         GamesResponseBody body = new GamesResponseBody();
-        List<Games> games = new ArrayList<>();
-        games.add(new Games());
-        games.add(new Games());
+        List<GamesDto> games = new ArrayList<>();
+        GamesDto game = new GamesDto();
+        game.setGameId("test");
+        game.setAvgVote(7.7F);
+        game.setGameName("test");
+        game.setCategory("test");
+        game.setGameIcon(new byte[0]);
+        game.setDescription("test");
+        games.add(game);
+        games.add(new GamesDto());
         body.setGames(games);
         gamesResponse.setBody(new BaseBody<>(body));
 
