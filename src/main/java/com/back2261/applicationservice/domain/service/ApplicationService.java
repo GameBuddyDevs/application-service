@@ -1,6 +1,7 @@
 package com.back2261.applicationservice.domain.service;
 
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
+import com.back2261.applicationservice.interfaces.request.MessageRequest;
 import com.back2261.applicationservice.interfaces.response.FriendsResponse;
 import com.back2261.applicationservice.interfaces.response.GamesResponse;
 import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
@@ -29,4 +30,6 @@ public interface ApplicationService {
     DefaultMessageResponse unblockUser(FriendRequest unblockFriendRequest, String token);
 
     DefaultMessageResponse sendFriendRequest(FriendRequest sendFriendRequest, String token);
+
+    DefaultMessageResponse saveMessageToMongo(MessageRequest messageRequest);
 }

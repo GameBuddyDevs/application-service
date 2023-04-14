@@ -3,14 +3,19 @@ package com.back2261.applicationservice.domain.service;
 import com.back2261.applicationservice.infrastructure.entity.Gamer;
 import com.back2261.applicationservice.infrastructure.entity.Games;
 import com.back2261.applicationservice.infrastructure.entity.Keywords;
+import com.back2261.applicationservice.infrastructure.entity.Message;
 import com.back2261.applicationservice.infrastructure.repository.GamerRepository;
 import com.back2261.applicationservice.infrastructure.repository.GamesRepository;
 import com.back2261.applicationservice.infrastructure.repository.KeywordsRepository;
 import com.back2261.applicationservice.interfaces.dto.*;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
+import com.back2261.applicationservice.interfaces.request.MessageRequest;
 import com.back2261.applicationservice.interfaces.response.FriendsResponse;
 import com.back2261.applicationservice.interfaces.response.GamesResponse;
 import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import io.github.GameBuddyDevs.backendlibrary.base.BaseBody;
 import io.github.GameBuddyDevs.backendlibrary.base.Status;
 import io.github.GameBuddyDevs.backendlibrary.enums.TransactionCode;
@@ -18,12 +23,12 @@ import io.github.GameBuddyDevs.backendlibrary.exception.BusinessException;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageBody;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 import io.github.GameBuddyDevs.backendlibrary.service.JwtService;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,6 +38,13 @@ public class DefaultApplicationService implements ApplicationService {
     private final GamesRepository gamesRepository;
     private final GamerRepository gamerRepository;
     private final JwtService jwtService;
+    private final MongoClient mongoClient;
+
+    @Value("${spring.data.mongodb.database}")
+    private String mongoDbDatabase;
+
+    @Value("${spring.data.mongodb.collection}")
+    private String mongoDbCollection;
 
     @Override
     public KeywordsResponse getKeywords() {
@@ -244,6 +256,27 @@ public class DefaultApplicationService implements ApplicationService {
 
         DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
         DefaultMessageBody body = new DefaultMessageBody("Friend request sent successfully");
+        defaultMessageResponse.setBody(new BaseBody<>(body));
+        defaultMessageResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return defaultMessageResponse;
+    }
+
+    @Override
+    public DefaultMessageResponse saveMessageToMongo(MessageRequest messageRequest) {
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
+        MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
+        Message message = new Message();
+        message.setMessage(messageRequest.getMessage());
+        message.setId(UUID.randomUUID().toString());
+        message.setRead(messageRequest.isRead());
+        message.setSender(messageRequest.getSender());
+        message.setReceiver(messageRequest.getReceiver());
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        message.setDate(dateFormat.format(new Date()));
+        collection.insertOne(message);
+
+        DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
+        DefaultMessageBody body = new DefaultMessageBody("Message saved successfully");
         defaultMessageResponse.setBody(new BaseBody<>(body));
         defaultMessageResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return defaultMessageResponse;

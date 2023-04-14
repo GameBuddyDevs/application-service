@@ -15,6 +15,11 @@ spring:
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
+  data:
+    mongodb:
+      uri: mongodb://gamebuddy:hMRbRvpq2dzX1Eqt@ac-ffig6la-shard-00-00.8ymoclu.mongodb.net:27017,ac-ffig6la-shard-00-01.8ymoclu.mongodb.net:27017,ac-ffig6la-shard-00-02.8ymoclu.mongodb.net:27017/?ssl=true&replicaSet=atlas-wt795g-shard-0&authSource=admin&retryWrites=true&w=majority
+      database: gamebuddy
+      collection: messages
 
 springdoc:
   swagger-ui:

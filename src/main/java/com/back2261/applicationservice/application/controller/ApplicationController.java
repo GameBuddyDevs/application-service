@@ -2,6 +2,7 @@ package com.back2261.applicationservice.application.controller;
 
 import com.back2261.applicationservice.domain.service.ApplicationService;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
+import com.back2261.applicationservice.interfaces.request.MessageRequest;
 import com.back2261.applicationservice.interfaces.response.FriendsResponse;
 import com.back2261.applicationservice.interfaces.response.GamesResponse;
 import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
@@ -97,5 +98,11 @@ public class ApplicationController {
             @Valid @RequestBody FriendRequest sendFriendRequest) {
         return new ResponseEntity<>(
                 applicationService.sendFriendRequest(sendFriendRequest, token.substring(7)), HttpStatus.OK);
+    }
+
+    @PostMapping("/save/message")
+    public ResponseEntity<DefaultMessageResponse> saveMessageToMongo(
+            @Valid @RequestBody MessageRequest messageRequest) {
+        return new ResponseEntity<>(applicationService.saveMessageToMongo(messageRequest), HttpStatus.OK);
     }
 }
