@@ -2,6 +2,7 @@ package com.back2261.applicationservice.domain.service;
 
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
 import com.back2261.applicationservice.interfaces.request.MessageRequest;
+import com.back2261.applicationservice.interfaces.response.AvatarsResponse;
 import com.back2261.applicationservice.interfaces.response.FriendsResponse;
 import com.back2261.applicationservice.interfaces.response.GamesResponse;
 import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
@@ -12,6 +13,8 @@ public interface ApplicationService {
     KeywordsResponse getKeywords();
 
     GamesResponse getGames();
+
+    AvatarsResponse getAvatars();
 
     FriendsResponse getFriends(String token);
 

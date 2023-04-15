@@ -13,5 +13,5 @@ import lombok.Setter;
 @NoArgsConstructor
 public class FriendsResponseBody extends BaseModel {
 
-    List<GamerDto> friends;
+    private List<GamerDto> friends;
 }
