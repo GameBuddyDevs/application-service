@@ -9,5 +9,5 @@ import lombok.Setter;
 @Setter
 public class KeywordsResponseBody extends BaseModel {
 
-    List<KeywordsDto> keywords;
+    private List<KeywordsDto> keywords;
 }

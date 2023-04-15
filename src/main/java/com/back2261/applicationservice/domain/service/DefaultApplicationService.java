@@ -1,15 +1,14 @@
 package com.back2261.applicationservice.domain.service;
 
-import com.back2261.applicationservice.infrastructure.entity.Gamer;
-import com.back2261.applicationservice.infrastructure.entity.Games;
-import com.back2261.applicationservice.infrastructure.entity.Keywords;
-import com.back2261.applicationservice.infrastructure.entity.Message;
+import com.back2261.applicationservice.infrastructure.entity.*;
+import com.back2261.applicationservice.infrastructure.repository.AvatarsRepository;
 import com.back2261.applicationservice.infrastructure.repository.GamerRepository;
 import com.back2261.applicationservice.infrastructure.repository.GamesRepository;
 import com.back2261.applicationservice.infrastructure.repository.KeywordsRepository;
 import com.back2261.applicationservice.interfaces.dto.*;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
 import com.back2261.applicationservice.interfaces.request.MessageRequest;
+import com.back2261.applicationservice.interfaces.response.AvatarsResponse;
 import com.back2261.applicationservice.interfaces.response.FriendsResponse;
 import com.back2261.applicationservice.interfaces.response.GamesResponse;
 import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
@@ -37,6 +36,7 @@ public class DefaultApplicationService implements ApplicationService {
     private final KeywordsRepository keywordsRepository;
     private final GamesRepository gamesRepository;
     private final GamerRepository gamerRepository;
+    private final AvatarsRepository avatarsRepository;
     private final JwtService jwtService;
     private final MongoClient mongoClient;
 
@@ -74,6 +74,24 @@ public class DefaultApplicationService implements ApplicationService {
         gamesResponse.setBody(new BaseBody<>(body));
         gamesResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return gamesResponse;
+    }
+
+    @Override
+    public AvatarsResponse getAvatars() {
+        List<Avatars> avatarsList = avatarsRepository.findAllByIsSpecialFalse();
+        List<AvatarsDto> avatarsDtoList = new ArrayList<>();
+        avatarsList.forEach(avatars -> {
+            AvatarsDto avatarsDto = new AvatarsDto();
+            avatarsDto.setId(String.valueOf(avatars.getId()));
+            avatarsDto.setImageUrl(avatars.getImage());
+            avatarsDtoList.add(avatarsDto);
+        });
+        AvatarsResponse avatarsResponse = new AvatarsResponse();
+        AvatarsResponseBody body = new AvatarsResponseBody();
+        body.setAvatars(avatarsDtoList);
+        avatarsResponse.setBody(new BaseBody<>(body));
+        avatarsResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return avatarsResponse;
     }
 
     @Override

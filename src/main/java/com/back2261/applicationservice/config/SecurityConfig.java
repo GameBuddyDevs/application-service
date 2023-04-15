@@ -28,7 +28,11 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.authorizeHttpRequests()
-                .requestMatchers("/application/get/keywords", "/application/get/games", "/application/save/message")
+                .requestMatchers(
+                        "/application/get/keywords",
+                        "/application/get/games",
+                        "/application/save/message",
+                        "/application/get/avatars")
                 .permitAll()
                 .requestMatchers("/api-docs/**", "/api-docs.yaml", "/swagger-ui/**", "/swagger-ui.html")
                 .permitAll()

@@ -3,6 +3,7 @@ package com.back2261.applicationservice.application.controller;
 import com.back2261.applicationservice.domain.service.ApplicationService;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
 import com.back2261.applicationservice.interfaces.request.MessageRequest;
+import com.back2261.applicationservice.interfaces.response.AvatarsResponse;
 import com.back2261.applicationservice.interfaces.response.FriendsResponse;
 import com.back2261.applicationservice.interfaces.response.GamesResponse;
 import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
@@ -32,6 +33,11 @@ public class ApplicationController {
     @GetMapping("/get/games")
     public ResponseEntity<GamesResponse> getGames() {
         return new ResponseEntity<>(applicationService.getGames(), HttpStatus.OK);
+    }
+
+    @GetMapping("/get/avatars")
+    public ResponseEntity<AvatarsResponse> getAvatars() {
+        return new ResponseEntity<>(applicationService.getAvatars(), HttpStatus.OK);
     }
 
     @GetMapping("/get/friends")
