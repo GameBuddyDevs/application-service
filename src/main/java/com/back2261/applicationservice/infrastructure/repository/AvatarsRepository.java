@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AvatarsRepository extends JpaRepository<Avatars, UUID> {
 
     List<Avatars> findAllByIsSpecialFalse();
+
+    List<Avatars> findAllByIsSpecialTrue();
 }

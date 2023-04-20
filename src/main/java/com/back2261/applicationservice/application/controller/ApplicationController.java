@@ -3,10 +3,7 @@ package com.back2261.applicationservice.application.controller;
 import com.back2261.applicationservice.domain.service.ApplicationService;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
 import com.back2261.applicationservice.interfaces.request.MessageRequest;
-import com.back2261.applicationservice.interfaces.response.AvatarsResponse;
-import com.back2261.applicationservice.interfaces.response.FriendsResponse;
-import com.back2261.applicationservice.interfaces.response.GamesResponse;
-import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
+import com.back2261.applicationservice.interfaces.response.*;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -36,8 +33,35 @@ public class ApplicationController {
     }
 
     @GetMapping("/get/avatars")
-    public ResponseEntity<AvatarsResponse> getAvatars() {
-        return new ResponseEntity<>(applicationService.getAvatars(), HttpStatus.OK);
+    public ResponseEntity<AvatarsResponse> getAvatars(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token) {
+        return new ResponseEntity<>(applicationService.getAvatars(token.substring(7)), HttpStatus.OK);
+    }
+
+    @GetMapping("/get/achievements")
+    public ResponseEntity<AchievementResponse> getAchievements(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token) {
+        return new ResponseEntity<>(applicationService.getAchievements(token.substring(7)), HttpStatus.OK);
+    }
+
+    @PostMapping("/collect/achievement/{achievementId}")
+    public ResponseEntity<DefaultMessageResponse> collectAchievement(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
+            @Valid @PathVariable String achievementId) {
+        return new ResponseEntity<>(
+                applicationService.collectAchievement(token.substring(7), achievementId), HttpStatus.OK);
+    }
+
+    @GetMapping("/get/marketplace")
+    public ResponseEntity<MarketplaceResponse> getMarketplace() {
+        return new ResponseEntity<>(applicationService.getMarketplace(), HttpStatus.OK);
+    }
+
+    @PostMapping("/buy/item/{itemId}")
+    public ResponseEntity<DefaultMessageResponse> buyItem(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
+            @Valid @PathVariable String itemId) {
+        return new ResponseEntity<>(applicationService.buyItem(token.substring(7), itemId), HttpStatus.OK);
     }
 
     @GetMapping("/get/friends")
@@ -108,7 +132,17 @@ public class ApplicationController {
 
     @PostMapping("/save/message")
     public ResponseEntity<DefaultMessageResponse> saveMessageToMongo(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
             @Valid @RequestBody MessageRequest messageRequest) {
-        return new ResponseEntity<>(applicationService.saveMessageToMongo(messageRequest), HttpStatus.OK);
+        return new ResponseEntity<>(
+                applicationService.saveMessageToMongo(token.substring(7), messageRequest), HttpStatus.OK);
+    }
+
+    @GetMapping("/get/messages")
+    public ResponseEntity<ConversationResponse> getMessages(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
+            @Valid @RequestBody FriendRequest friendRequest) {
+        return new ResponseEntity<>(
+                applicationService.getUserConversation(token.substring(7), friendRequest), HttpStatus.OK);
     }
 }

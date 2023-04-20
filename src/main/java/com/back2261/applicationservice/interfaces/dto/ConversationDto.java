@@ -5,8 +5,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AvatarsDto {
-
-    private String id;
-    private String image;
+public class ConversationDto {
+    private String sender;
+    private String message;
+    private String date;
 }
