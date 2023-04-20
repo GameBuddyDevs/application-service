@@ -1,17 +1,15 @@
 package com.back2261.applicationservice.domain.service;
 
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Indexes.ascending;
+
 import com.back2261.applicationservice.infrastructure.entity.*;
-import com.back2261.applicationservice.infrastructure.repository.AvatarsRepository;
-import com.back2261.applicationservice.infrastructure.repository.GamerRepository;
-import com.back2261.applicationservice.infrastructure.repository.GamesRepository;
-import com.back2261.applicationservice.infrastructure.repository.KeywordsRepository;
+import com.back2261.applicationservice.infrastructure.repository.*;
 import com.back2261.applicationservice.interfaces.dto.*;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
 import com.back2261.applicationservice.interfaces.request.MessageRequest;
-import com.back2261.applicationservice.interfaces.response.AvatarsResponse;
-import com.back2261.applicationservice.interfaces.response.FriendsResponse;
-import com.back2261.applicationservice.interfaces.response.GamesResponse;
-import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
+import com.back2261.applicationservice.interfaces.response.*;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -37,6 +35,7 @@ public class DefaultApplicationService implements ApplicationService {
     private final GamesRepository gamesRepository;
     private final GamerRepository gamerRepository;
     private final AvatarsRepository avatarsRepository;
+    private final AchievementsRepository achievementRepository;
     private final JwtService jwtService;
     private final MongoClient mongoClient;
 
@@ -77,21 +76,121 @@ public class DefaultApplicationService implements ApplicationService {
     }
 
     @Override
-    public AvatarsResponse getAvatars() {
+    public AvatarsResponse getAvatars(String token) {
+        Gamer gamer = extractGamer(token);
+        List<Avatars> boughtAvatars = gamer.getBoughtAvatars().stream().toList();
         List<Avatars> avatarsList = avatarsRepository.findAllByIsSpecialFalse();
+        avatarsList.addAll(boughtAvatars);
         List<AvatarsDto> avatarsDtoList = new ArrayList<>();
         avatarsList.forEach(avatars -> {
             AvatarsDto avatarsDto = new AvatarsDto();
-            avatarsDto.setId(String.valueOf(avatars.getId()));
-            avatarsDto.setImageUrl(avatars.getImage());
+            BeanUtils.copyProperties(avatars, avatarsDto);
             avatarsDtoList.add(avatarsDto);
         });
+
         AvatarsResponse avatarsResponse = new AvatarsResponse();
         AvatarsResponseBody body = new AvatarsResponseBody();
         body.setAvatars(avatarsDtoList);
         avatarsResponse.setBody(new BaseBody<>(body));
         avatarsResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return avatarsResponse;
+    }
+
+    @Override
+    public AchievementResponse getAchievements(String token) {
+        Gamer gamer = extractGamer(token);
+        List<Achievements> finishedAchievements = new ArrayList<>();
+        List<Achievements> collectedAchievements = new ArrayList<>();
+        gamer.getGamerAchievements().forEach(achievement -> {
+            if (achievement.getIsCollected()) {
+                collectedAchievements.add(achievement);
+            } else {
+                finishedAchievements.add(achievement);
+            }
+        });
+        List<Achievements> achievementsList = achievementRepository.findAll();
+        AchievementResponse achievementResponse = new AchievementResponse();
+        AchievementResponseBody body = new AchievementResponseBody();
+        body.setAchievementsList(achievementsList);
+        body.setFinishedAchievementsList(finishedAchievements);
+        body.setCollectedAchievementsList(collectedAchievements);
+        achievementResponse.setBody(new BaseBody<>(body));
+        achievementResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return achievementResponse;
+    }
+
+    @Override
+    public DefaultMessageResponse collectAchievement(String token, String achievementId) {
+        Gamer gamer = extractGamer(token);
+        Integer coin = gamer.getCoin();
+        Achievements achievement = achievementRepository
+                .findById(UUID.fromString(achievementId))
+                .orElseThrow(() -> new BusinessException(TransactionCode.ACHIEVEMENT_NOT_FOUND));
+        Boolean isCollected = gamer.getGamerAchievements().stream()
+                .filter(achievement1 -> achievement1.getId().equals(achievement.getId()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(TransactionCode.ACHIEVEMENT_NOT_EARNED))
+                .getIsCollected();
+        if (isCollected) {
+            throw new BusinessException(TransactionCode.ALREADY_COLLECTED);
+        }
+
+        gamer.setCoin(coin + achievement.getValue());
+        gamer.getGamerAchievements().remove(achievement);
+        achievement.setIsCollected(true);
+        gamer.getGamerAchievements().add(achievement);
+
+        gamerRepository.save(gamer);
+        DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
+        DefaultMessageBody body =
+                new DefaultMessageBody("Achievement" + achievement.getAchievementName() + "collected");
+        defaultMessageResponse.setBody(new BaseBody<>(body));
+        defaultMessageResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return defaultMessageResponse;
+    }
+
+    @Override
+    public MarketplaceResponse getMarketplace() {
+        List<Avatars> specialAvatars = avatarsRepository.findAllByIsSpecialTrue();
+        List<SpecialAvatarsDto> specialAvatarsDtoList = new ArrayList<>();
+        specialAvatars.forEach(avatars -> {
+            SpecialAvatarsDto avatarsDto = new SpecialAvatarsDto();
+            BeanUtils.copyProperties(avatars, avatarsDto);
+            specialAvatarsDtoList.add(avatarsDto);
+        });
+        MarketplaceResponse marketplaceResponse = new MarketplaceResponse();
+        MarketplaceResponseBody body = new MarketplaceResponseBody();
+        body.setSpecialAvatars(specialAvatarsDtoList);
+        marketplaceResponse.setBody(new BaseBody<>(body));
+        marketplaceResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return marketplaceResponse;
+    }
+
+    @Override
+    public DefaultMessageResponse buyItem(String token, String itemId) {
+        Gamer gamer = extractGamer(token);
+        Integer coin = gamer.getCoin();
+        Avatars avatar = avatarsRepository
+                .findById(UUID.fromString(itemId))
+                .orElseThrow(() -> new BusinessException(TransactionCode.AVATAR_NOT_FOUND));
+        if (!avatar.getIsSpecial()) {
+            throw new BusinessException(TransactionCode.AVATAR_ALREADY_OWNED);
+        }
+        if (gamer.getBoughtAvatars().contains(avatar)) {
+            throw new BusinessException(TransactionCode.AVATAR_ALREADY_OWNED);
+        }
+        if (coin < avatar.getPrice()) {
+            throw new BusinessException(TransactionCode.COIN_NOT_ENOUGH);
+        }
+
+        gamer.setCoin(coin - avatar.getPrice());
+        gamer.getBoughtAvatars().add(avatar);
+        gamerRepository.save(gamer);
+        DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
+        DefaultMessageBody body = new DefaultMessageBody("Item bought");
+        defaultMessageResponse.setBody(new BaseBody<>(body));
+        defaultMessageResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return defaultMessageResponse;
     }
 
     @Override
@@ -280,15 +379,16 @@ public class DefaultApplicationService implements ApplicationService {
     }
 
     @Override
-    public DefaultMessageResponse saveMessageToMongo(MessageRequest messageRequest) {
+    public DefaultMessageResponse saveMessageToMongo(String token, MessageRequest messageRequest) {
+        Gamer gamer = extractGamer(token);
         MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
         MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
         Message message = new Message();
         message.setMessage(messageRequest.getMessage());
         message.setId(UUID.randomUUID().toString());
         message.setRead(messageRequest.isRead());
-        message.setSender(messageRequest.getSender());
-        message.setReceiver(messageRequest.getReceiver());
+        message.setSender(gamer.getUserId());
+        message.setReceiver(messageRequest.getReceiverId());
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         message.setDate(dateFormat.format(new Date()));
         collection.insertOne(message);
@@ -298,6 +398,41 @@ public class DefaultApplicationService implements ApplicationService {
         defaultMessageResponse.setBody(new BaseBody<>(body));
         defaultMessageResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return defaultMessageResponse;
+    }
+
+    @Override
+    public ConversationResponse getUserConversation(String token, FriendRequest friendRequest) {
+        Gamer gamer = extractGamer(token);
+        if (Objects.equals(gamer.getUserId(), friendRequest.getUserId())) {
+            throw new BusinessException(TransactionCode.SAME_IDS); // Kendin ile konuşma yapamazsın
+        }
+        Gamer friend = getGamerFromId(friendRequest.getUserId());
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
+        MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
+        FindIterable<Message> sendedMessages = collection
+                .find(eq("sender", gamer.getUserId()))
+                .filter(eq("receiver", friend.getUserId()))
+                .sort(ascending("date"));
+        FindIterable<Message> recievedMessages = collection
+                .find(eq("sender", friend.getUserId()))
+                .filter(eq("receiver", gamer.getUserId()))
+                .sort(ascending("date"));
+        List<Message> messageList = new ArrayList<>();
+        sendedMessages.into(messageList);
+        recievedMessages.into(messageList);
+        List<ConversationDto> conversationDtoList = new ArrayList<>();
+        for (Message message : messageList) {
+            ConversationDto conversationDto = new ConversationDto();
+            BeanUtils.copyProperties(message, conversationDto);
+            conversationDtoList.add(conversationDto);
+        }
+
+        ConversationResponse conversationResponse = new ConversationResponse();
+        ConversationResponseBody body = new ConversationResponseBody();
+        body.setConversations(conversationDtoList);
+        conversationResponse.setBody(new BaseBody<>(body));
+        conversationResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return conversationResponse;
     }
 
     private FriendsResponse getFriendsResponse(List<GamerDto> friendDtoList, Set<Gamer> friends) {

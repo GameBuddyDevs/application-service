@@ -31,8 +31,8 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/application/get/keywords",
                         "/application/get/games",
-                        "/application/save/message",
-                        "/application/get/avatars")
+                        "/application/get/avatars",
+                        "/application/get/marketplace")
                 .permitAll()
                 .requestMatchers("/api-docs/**", "/api-docs.yaml", "/swagger-ui/**", "/swagger-ui.html")
                 .permitAll()

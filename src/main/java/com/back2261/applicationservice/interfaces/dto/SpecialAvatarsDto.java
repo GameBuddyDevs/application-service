@@ -5,8 +5,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AvatarsDto {
-
+public class SpecialAvatarsDto {
     private String id;
     private String image;
+    private String price;
 }

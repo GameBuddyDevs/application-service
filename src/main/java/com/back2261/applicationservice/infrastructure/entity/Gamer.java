@@ -42,6 +42,7 @@ public class Gamer implements UserDetails {
     private String pwd;
     private String gender;
     private Boolean isBlocked = false;
+    private Integer coin;
 
     @ManyToMany
     @JoinTable(
@@ -79,6 +80,20 @@ public class Gamer implements UserDetails {
             joinColumns = @JoinColumn(name = "gamer_id"),
             inverseJoinColumns = @JoinColumn(name = "blocked_user_id"))
     private Set<Gamer> blockedFriends;
+
+    @ManyToMany
+    @JoinTable(
+            name = "gamer_achievements_join",
+            joinColumns = @JoinColumn(name = "gamer_id"),
+            inverseJoinColumns = @JoinColumn(name = "achievement_id"))
+    private Set<Achievements> gamerAchievements;
+
+    @ManyToMany
+    @JoinTable(
+            name = "bought_avatars",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "avatar_id"))
+    private Set<Avatars> boughtAvatars;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -2,10 +2,7 @@ package com.back2261.applicationservice.domain.service;
 
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
 import com.back2261.applicationservice.interfaces.request.MessageRequest;
-import com.back2261.applicationservice.interfaces.response.AvatarsResponse;
-import com.back2261.applicationservice.interfaces.response.FriendsResponse;
-import com.back2261.applicationservice.interfaces.response.GamesResponse;
-import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
+import com.back2261.applicationservice.interfaces.response.*;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 
 public interface ApplicationService {
@@ -14,7 +11,15 @@ public interface ApplicationService {
 
     GamesResponse getGames();
 
-    AvatarsResponse getAvatars();
+    AvatarsResponse getAvatars(String token);
+
+    AchievementResponse getAchievements(String token);
+
+    DefaultMessageResponse collectAchievement(String token, String achievementId);
+
+    MarketplaceResponse getMarketplace();
+
+    DefaultMessageResponse buyItem(String token, String itemId);
 
     FriendsResponse getFriends(String token);
 
@@ -34,5 +39,7 @@ public interface ApplicationService {
 
     DefaultMessageResponse sendFriendRequest(FriendRequest sendFriendRequest, String token);
 
-    DefaultMessageResponse saveMessageToMongo(MessageRequest messageRequest);
+    DefaultMessageResponse saveMessageToMongo(String token, MessageRequest messageRequest);
+
+    ConversationResponse getUserConversation(String token, FriendRequest friendRequest);
 }
