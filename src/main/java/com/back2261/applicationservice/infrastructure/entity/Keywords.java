@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
@@ -19,7 +20,7 @@ import org.hibernate.annotations.CreationTimestamp;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Keywords {
+public class Keywords implements Serializable {
     @Id
     private UUID id;
 

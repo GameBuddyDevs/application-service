@@ -13,7 +13,7 @@ public class Message implements Serializable {
     private String id;
     private String sender;
     private String receiver;
-    private String message;
+    private String messageBody;
     private String date;
     private boolean read;
 }

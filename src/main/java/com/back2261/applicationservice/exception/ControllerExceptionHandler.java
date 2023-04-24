@@ -4,7 +4,6 @@ import io.github.GameBuddyDevs.backendlibrary.base.Status;
 import io.github.GameBuddyDevs.backendlibrary.exception.BusinessException;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -17,8 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 public class ControllerExceptionHandler {
     @ExceptionHandler(Exception.class)
-    public final ResponseEntity<DefaultMessageResponse> handleException(Exception ex, HttpServletRequest request)
-            throws IOException {
+    public final ResponseEntity<DefaultMessageResponse> handleException(Exception ex, HttpServletRequest request) {
         DefaultMessageResponse response = new DefaultMessageResponse();
         Status status = new Status();
         status.setMessage(ex.getMessage());
@@ -30,7 +28,7 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public final ResponseEntity<DefaultMessageResponse> handleValidationException(
-            MethodArgumentNotValidException ex, HttpServletRequest request) throws IOException {
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
         try {
             List<String> errors = new ArrayList<>();
             for (DefaultMessageSourceResolvable error : ex.getBindingResult().getAllErrors()) {
@@ -51,7 +49,7 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public final ResponseEntity<DefaultMessageResponse> handleKFBusinessException(
-            BusinessException ex, HttpServletRequest request) throws IOException {
+            BusinessException ex, HttpServletRequest request) {
         try {
             DefaultMessageResponse response = new DefaultMessageResponse();
             Status status = new Status();

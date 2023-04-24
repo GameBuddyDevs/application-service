@@ -84,7 +84,8 @@ public class DefaultApplicationService implements ApplicationService {
         List<AvatarsDto> avatarsDtoList = new ArrayList<>();
         avatarsList.forEach(avatars -> {
             AvatarsDto avatarsDto = new AvatarsDto();
-            BeanUtils.copyProperties(avatars, avatarsDto);
+            avatarsDto.setId(avatars.getId().toString());
+            avatarsDto.setImage(avatars.getImage());
             avatarsDtoList.add(avatarsDto);
         });
 
@@ -99,21 +100,23 @@ public class DefaultApplicationService implements ApplicationService {
     @Override
     public AchievementResponse getAchievements(String token) {
         Gamer gamer = extractGamer(token);
-        List<Achievements> finishedAchievements = new ArrayList<>();
-        List<Achievements> collectedAchievements = new ArrayList<>();
-        gamer.getGamerAchievements().forEach(achievement -> {
-            if (achievement.getIsCollected()) {
-                collectedAchievements.add(achievement);
-            } else {
-                finishedAchievements.add(achievement);
-            }
-        });
+        Set<Achievements> collected = gamer.getGamerCollectedAchievements();
+        Set<Achievements> earned = gamer.getGamerEarnedAchievements();
         List<Achievements> achievementsList = achievementRepository.findAll();
+        List<AchievementsDto> achievementsDtoList = new ArrayList<>();
+
+        achievementsList.forEach(achievements -> {
+            AchievementsDto achievementsDto = new AchievementsDto();
+            BeanUtils.copyProperties(achievements, achievementsDto);
+            achievementsDto.setId(achievements.getId().toString());
+            achievementsDto.setIsCollected(collected.contains(achievements));
+            achievementsDto.setIsEarned(earned.contains(achievements));
+            achievementsDtoList.add(achievementsDto);
+        });
+
         AchievementResponse achievementResponse = new AchievementResponse();
         AchievementResponseBody body = new AchievementResponseBody();
-        body.setAchievementsList(achievementsList);
-        body.setFinishedAchievementsList(finishedAchievements);
-        body.setCollectedAchievementsList(collectedAchievements);
+        body.setAchievementsList(achievementsDtoList);
         achievementResponse.setBody(new BaseBody<>(body));
         achievementResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return achievementResponse;
@@ -123,27 +126,27 @@ public class DefaultApplicationService implements ApplicationService {
     public DefaultMessageResponse collectAchievement(String token, String achievementId) {
         Gamer gamer = extractGamer(token);
         Integer coin = gamer.getCoin();
-        Achievements achievement = achievementRepository
-                .findById(UUID.fromString(achievementId))
-                .orElseThrow(() -> new BusinessException(TransactionCode.ACHIEVEMENT_NOT_FOUND));
-        Boolean isCollected = gamer.getGamerAchievements().stream()
-                .filter(achievement1 -> achievement1.getId().equals(achievement.getId()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(TransactionCode.ACHIEVEMENT_NOT_EARNED))
-                .getIsCollected();
-        if (isCollected) {
+        Optional<Achievements> achievementOptional = achievementRepository.findById(UUID.fromString(achievementId));
+        if (achievementOptional.isEmpty()) {
+            throw new BusinessException(TransactionCode.ACHIEVEMENT_NOT_FOUND);
+        }
+        Achievements achievement = achievementOptional.get();
+
+        if (Boolean.FALSE.equals(gamer.getGamerEarnedAchievements().contains(achievement))) {
+            throw new BusinessException(TransactionCode.ACHIEVEMENT_NOT_EARNED);
+        }
+
+        if (Boolean.TRUE.equals(gamer.getGamerCollectedAchievements().contains(achievement))) {
             throw new BusinessException(TransactionCode.ALREADY_COLLECTED);
         }
 
         gamer.setCoin(coin + achievement.getValue());
-        gamer.getGamerAchievements().remove(achievement);
-        achievement.setIsCollected(true);
-        gamer.getGamerAchievements().add(achievement);
-
+        gamer.getGamerCollectedAchievements().add(achievement);
         gamerRepository.save(gamer);
+
         DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
         DefaultMessageBody body =
-                new DefaultMessageBody("Achievement" + achievement.getAchievementName() + "collected");
+                new DefaultMessageBody("Achievement " + achievement.getAchievementName() + " collected");
         defaultMessageResponse.setBody(new BaseBody<>(body));
         defaultMessageResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return defaultMessageResponse;
@@ -155,7 +158,9 @@ public class DefaultApplicationService implements ApplicationService {
         List<SpecialAvatarsDto> specialAvatarsDtoList = new ArrayList<>();
         specialAvatars.forEach(avatars -> {
             SpecialAvatarsDto avatarsDto = new SpecialAvatarsDto();
-            BeanUtils.copyProperties(avatars, avatarsDto);
+            avatarsDto.setId(avatars.getId().toString());
+            avatarsDto.setImage(avatars.getImage());
+            avatarsDto.setPrice(String.valueOf(avatars.getPrice()));
             specialAvatarsDtoList.add(avatarsDto);
         });
         MarketplaceResponse marketplaceResponse = new MarketplaceResponse();
@@ -173,7 +178,7 @@ public class DefaultApplicationService implements ApplicationService {
         Avatars avatar = avatarsRepository
                 .findById(UUID.fromString(itemId))
                 .orElseThrow(() -> new BusinessException(TransactionCode.AVATAR_NOT_FOUND));
-        if (!avatar.getIsSpecial()) {
+        if (Boolean.FALSE.equals(avatar.getIsSpecial())) {
             throw new BusinessException(TransactionCode.AVATAR_ALREADY_OWNED);
         }
         if (gamer.getBoughtAvatars().contains(avatar)) {
@@ -185,6 +190,13 @@ public class DefaultApplicationService implements ApplicationService {
 
         gamer.setCoin(coin - avatar.getPrice());
         gamer.getBoughtAvatars().add(avatar);
+        if (gamer.getBoughtAvatars().size() == 3) {
+            Achievements achievement = achievementRepository
+                    .findByAchievementName("Rich in the hood!!!")
+                    .orElseThrow(() -> new BusinessException(TransactionCode.ACHIEVEMENT_NOT_FOUND));
+            gamer.getGamerEarnedAchievements().add(achievement);
+            // TODO: Send notification
+        }
         gamerRepository.save(gamer);
         DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
         DefaultMessageBody body = new DefaultMessageBody("Item bought");
@@ -384,7 +396,7 @@ public class DefaultApplicationService implements ApplicationService {
         MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
         MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
         Message message = new Message();
-        message.setMessage(messageRequest.getMessage());
+        message.setMessageBody(messageRequest.getMessage());
         message.setId(UUID.randomUUID().toString());
         message.setRead(messageRequest.isRead());
         message.setSender(gamer.getUserId());

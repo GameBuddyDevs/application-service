@@ -7,15 +7,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.back2261.applicationservice.domain.service.DefaultApplicationService;
 import com.back2261.applicationservice.interfaces.dto.*;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
-import com.back2261.applicationservice.interfaces.response.FriendsResponse;
-import com.back2261.applicationservice.interfaces.response.GamesResponse;
-import com.back2261.applicationservice.interfaces.response.KeywordsResponse;
+import com.back2261.applicationservice.interfaces.request.MessageRequest;
+import com.back2261.applicationservice.interfaces.response.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.GameBuddyDevs.backendlibrary.base.BaseBody;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageBody;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 import io.github.GameBuddyDevs.backendlibrary.service.JwtService;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -123,6 +123,119 @@ class ApplicationControllerTest {
         GamesResponse responseObj = objectMapper.readValue(responseJson, GamesResponse.class);
         assertEquals(200, response.getResponse().getStatus());
         assertEquals(2, responseObj.getBody().getData().getGames().size());
+    }
+
+    @Test
+    void testGetAvatars_whenValidTokenProvided_shoudReturnFreeAvatarsAndOwnedAvatars() throws Exception {
+        AvatarsResponse avatarsResponse = new AvatarsResponse();
+        AvatarsResponseBody body = new AvatarsResponseBody();
+        List<AvatarsDto> avatars = new ArrayList<>();
+        AvatarsDto avatar = new AvatarsDto();
+        avatar.setImage("test");
+        avatar.setId("test");
+        avatars.add(avatar);
+        avatars.add(new AvatarsDto());
+        body.setAvatars(avatars);
+        avatarsResponse.setBody(new BaseBody<>(body));
+
+        Mockito.when(defaultApplicationService.getAvatars(token)).thenReturn(avatarsResponse);
+
+        var request = MockMvcRequestBuilders.get("/application/get/avatars")
+                .contentType("application/json")
+                .header("Authorization", "Bearer " + token);
+        var response = mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+        String responseJson = response.getResponse().getContentAsString();
+
+        AvatarsResponse responseObj = objectMapper.readValue(responseJson, AvatarsResponse.class);
+        assertEquals(200, response.getResponse().getStatus());
+        assertEquals(2, responseObj.getBody().getData().getAvatars().size());
+    }
+
+    @Test
+    void testGetAchievements_whenValidTokenProvided_shouldReturnUserAchievements() throws Exception {
+        AchievementResponse achievementResponse = new AchievementResponse();
+        AchievementResponseBody body = new AchievementResponseBody();
+        List<AchievementsDto> achievements = new ArrayList<>();
+        achievements.add(new AchievementsDto());
+        achievements.add(new AchievementsDto());
+        body.setAchievementsList(achievements);
+        achievementResponse.setBody(new BaseBody<>(body));
+
+        Mockito.when(defaultApplicationService.getAchievements(token)).thenReturn(achievementResponse);
+
+        var request = MockMvcRequestBuilders.get("/application/get/achievements")
+                .contentType("application/json")
+                .header("Authorization", "Bearer " + token);
+        var response = mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+        String responseJson = response.getResponse().getContentAsString();
+
+        AchievementResponse responseObj = objectMapper.readValue(responseJson, AchievementResponse.class);
+        assertEquals(200, response.getResponse().getStatus());
+        assertEquals(2, responseObj.getBody().getData().getAchievementsList().size());
+    }
+
+    @Test
+    void testCollectAchievement_whenValidIdProvided_shouldReturnSuccessMessage() throws Exception {
+        Mockito.when(defaultApplicationService.collectAchievement(token, "test"))
+                .thenReturn(defaultMessageResponse);
+
+        var request = MockMvcRequestBuilders.post("/application/collect/achievement/test")
+                .contentType("application/json")
+                .header("Authorization", "Bearer " + token);
+        var response = mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertEquals(200, response.getResponse().getStatus());
+    }
+
+    @Test
+    void testMarketPlace_whenRequested_shouldReturnMarketPlaceItems() throws Exception {
+        MarketplaceResponse marketplaceResponse = new MarketplaceResponse();
+        MarketplaceResponseBody body = new MarketplaceResponseBody();
+        List<SpecialAvatarsDto> marketplace = new ArrayList<>();
+        SpecialAvatarsDto item = new SpecialAvatarsDto();
+        item.setId("test");
+        item.setImage("test");
+        item.setPrice("100");
+        marketplace.add(item);
+        body.setSpecialAvatars(marketplace);
+        marketplaceResponse.setBody(new BaseBody<>(body));
+
+        Mockito.when(defaultApplicationService.getMarketplace()).thenReturn(marketplaceResponse);
+
+        var request = MockMvcRequestBuilders.get("/application/get/marketplace").contentType("application/json");
+        var response = mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+        String responseJson = response.getResponse().getContentAsString();
+
+        MarketplaceResponse responseObj = objectMapper.readValue(responseJson, MarketplaceResponse.class);
+        assertEquals(200, response.getResponse().getStatus());
+        assertEquals(1, responseObj.getBody().getData().getSpecialAvatars().size());
+    }
+
+    @Test
+    void testBuyItem_whenValidIdAndTokenProvided_shouldReturnSuccessMessage() throws Exception {
+        Mockito.when(defaultApplicationService.buyItem(token, "test")).thenReturn(defaultMessageResponse);
+
+        var request = MockMvcRequestBuilders.post("/application/buy/item/test")
+                .contentType("application/json")
+                .header("Authorization", "Bearer " + token);
+        var response = mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertEquals(200, response.getResponse().getStatus());
     }
 
     @Test
@@ -269,6 +382,59 @@ class ApplicationControllerTest {
                 .thenReturn(defaultMessageResponse);
 
         var request = MockMvcRequestBuilders.post("/application/send/friend")
+                .contentType("application/json")
+                .header("Authorization", "Bearer " + token)
+                .content(objectMapper.writeValueAsString(friendRequest));
+        var response = mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertEquals(200, response.getResponse().getStatus());
+    }
+
+    @Test
+    void testSaveMessageToMongo_whenValidRequestProvided_shouldReturnSuccessMessage() throws Exception {
+        MessageRequest messageRequest = new MessageRequest();
+        messageRequest.setMessage("test");
+        messageRequest.setReceiverId("test");
+        messageRequest.setRead(false);
+
+        Mockito.when(defaultApplicationService.saveMessageToMongo(token, messageRequest))
+                .thenReturn(defaultMessageResponse);
+
+        var request = MockMvcRequestBuilders.post("/application/save/message")
+                .contentType("application/json")
+                .header("Authorization", "Bearer " + token)
+                .content(objectMapper.writeValueAsString(messageRequest));
+        var response = mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertEquals(200, response.getResponse().getStatus());
+    }
+
+    @Test
+    void testGetMessages_whenValidIdProvided_shouldReturnMessageHistory() throws Exception {
+        FriendRequest friendRequest = new FriendRequest();
+        friendRequest.setUserId("test");
+        ConversationResponse conversationResponse = new ConversationResponse();
+        ConversationResponseBody body = new ConversationResponseBody();
+        List<ConversationDto> conversationDtos = new ArrayList<>();
+        ConversationDto conversationDto = new ConversationDto();
+        conversationDto.setMessage("test");
+        conversationDto.setDate(String.valueOf(new Date()));
+        conversationDto.setSender("test");
+        conversationDtos.add(conversationDto);
+        conversationDtos.add(conversationDto);
+        body.setConversations(conversationDtos);
+        conversationResponse.setBody(new BaseBody<>(body));
+
+        Mockito.when(defaultApplicationService.getUserConversation(token, friendRequest))
+                .thenReturn(conversationResponse);
+
+        var request = MockMvcRequestBuilders.get("/application/get/messages")
                 .contentType("application/json")
                 .header("Authorization", "Bearer " + token)
                 .content(objectMapper.writeValueAsString(friendRequest));

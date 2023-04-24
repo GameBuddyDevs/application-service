@@ -83,10 +83,17 @@ public class Gamer implements UserDetails {
 
     @ManyToMany
     @JoinTable(
-            name = "gamer_achievements_join",
+            name = "gamer_earned_achievements",
             joinColumns = @JoinColumn(name = "gamer_id"),
             inverseJoinColumns = @JoinColumn(name = "achievement_id"))
-    private Set<Achievements> gamerAchievements;
+    private Set<Achievements> gamerEarnedAchievements;
+
+    @ManyToMany
+    @JoinTable(
+            name = "gamer_collected_achievements",
+            joinColumns = @JoinColumn(name = "gamer_id"),
+            inverseJoinColumns = @JoinColumn(name = "achievement_id"))
+    private Set<Achievements> gamerCollectedAchievements;
 
     @ManyToMany
     @JoinTable(
