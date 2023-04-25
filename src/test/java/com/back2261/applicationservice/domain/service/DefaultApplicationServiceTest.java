@@ -329,6 +329,53 @@ class DefaultApplicationServiceTest {
     }
 
     @Test
+    void testGetFriends_whenAchievementNotFound_ReturnErrorCode124() {
+        Gamer gamer = getGamer();
+        gamer.getFriends().add(new Gamer());
+
+        Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
+        Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+        Mockito.when(achievementsRepository.findByAchievementName(Mockito.anyString()))
+                .thenReturn(Optional.empty());
+
+        BusinessException exception =
+                assertThrows(BusinessException.class, () -> defaultApplicationService.getFriends(token));
+        assertEquals(124, exception.getTransactionCode().getId());
+    }
+
+    @Test
+    void testGetFriends_whenAchievementAlreadyEarned_ReturnListOfFriends() {
+        Gamer gamer = getGamer();
+        gamer.getFriends().add(new Gamer());
+        gamer.getGamerEarnedAchievements().add(getAchievement());
+
+        Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
+        Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+        Mockito.when(achievementsRepository.findByAchievementName(Mockito.anyString()))
+                .thenReturn(Optional.of(getAchievement()));
+
+        FriendsResponse result = defaultApplicationService.getFriends(token);
+        assertEquals(1, result.getBody().getData().getFriends().size());
+        assertEquals("100", result.getStatus().getCode());
+    }
+
+    @Test
+    void testGetFriends_whenAchievementEarned_ReturnListOfFriends() {
+        Gamer gamer = getGamer();
+        gamer.getFriends().add(new Gamer());
+
+        Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
+        Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+        Mockito.when(achievementsRepository.findByAchievementName(Mockito.anyString()))
+                .thenReturn(Optional.of(getAchievement()));
+
+        FriendsResponse result = defaultApplicationService.getFriends(token);
+        assertEquals(1, result.getBody().getData().getFriends().size());
+        assertEquals("100", result.getStatus().getCode());
+        assertEquals(1, gamer.getGamerEarnedAchievements().size());
+    }
+
+    @Test
     void testGetFriends_whenCalledWithValidToken_ReturnListOfFriends() {
         Gamer gamer = getGamer();
         gamer.getFriends().add(new Gamer());
@@ -716,7 +763,7 @@ class DefaultApplicationServiceTest {
         gamer.setEmail("test");
         gamer.setAge(15);
         gamer.setCountry("test");
-        gamer.setAvatar(new byte[0]);
+        gamer.setAvatar("test");
         gamer.setLastModifiedDate(new Date());
         gamer.setPwd("test");
         gamer.setGender("E");

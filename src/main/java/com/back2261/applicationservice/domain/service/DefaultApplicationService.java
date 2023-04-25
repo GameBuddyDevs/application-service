@@ -210,6 +210,15 @@ public class DefaultApplicationService implements ApplicationService {
         List<GamerDto> friendDtoList = new ArrayList<>();
         Gamer gamer = extractGamer(token);
         Set<Gamer> friends = gamer.getFriends();
+        if (friends.size() == 1) {
+            Achievements achievement = achievementRepository
+                    .findByAchievementName("Friendly Person!!!")
+                    .orElseThrow(() -> new BusinessException(TransactionCode.ACHIEVEMENT_NOT_FOUND));
+            if (Boolean.FALSE.equals(gamer.getGamerEarnedAchievements().contains(achievement))) {
+                gamer.getGamerEarnedAchievements().add(achievement);
+                // TODO: Send notification
+            }
+        }
         return getFriendsResponse(friendDtoList, friends);
     }
 

@@ -126,7 +126,7 @@ class ApplicationControllerTest {
     }
 
     @Test
-    void testGetAvatars_whenValidTokenProvided_shoudReturnFreeAvatarsAndOwnedAvatars() throws Exception {
+    void testGetAvatars_whenValidTokenProvided_shouldReturnFreeAvatarsAndOwnedAvatars() throws Exception {
         AvatarsResponse avatarsResponse = new AvatarsResponse();
         AvatarsResponseBody body = new AvatarsResponseBody();
         List<AvatarsDto> avatars = new ArrayList<>();

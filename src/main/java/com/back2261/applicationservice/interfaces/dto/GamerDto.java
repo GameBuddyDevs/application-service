@@ -10,6 +10,6 @@ public class GamerDto {
     private String username;
     private Integer age;
     private String country;
-    private byte[] avatar;
+    private String avatar;
     private Date lastOnlineDate;
 }
