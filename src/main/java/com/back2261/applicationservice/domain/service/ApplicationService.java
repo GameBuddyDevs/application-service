@@ -7,6 +7,8 @@ import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 
 public interface ApplicationService {
 
+    UserInfoResponse getUserInfo(String token);
+
     KeywordsResponse getKeywords();
 
     GamesResponse getGames();

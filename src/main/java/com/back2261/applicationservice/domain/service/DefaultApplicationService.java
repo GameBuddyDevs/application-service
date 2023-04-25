@@ -46,6 +46,30 @@ public class DefaultApplicationService implements ApplicationService {
     private String mongoDbCollection;
 
     @Override
+    public UserInfoResponse getUserInfo(String token) {
+        Gamer gamer = extractGamer(token);
+        String avatar = "";
+        if (Objects.nonNull(gamer.getAvatar())) {
+            avatar = avatarsRepository
+                    .findById(UUID.fromString(gamer.getAvatar()))
+                    .orElseThrow(() -> new BusinessException(TransactionCode.AVATAR_NOT_FOUND))
+                    .getImage();
+        }
+        UserInfoResponse userInfoResponse = new UserInfoResponse();
+        UserInfoResponseBody body = new UserInfoResponseBody();
+        body.setAge(String.valueOf(gamer.getAge()));
+        body.setAvatar(avatar);
+        body.setCountry(gamer.getCountry());
+        body.setUsername(gamer.getGamerUsername());
+        body.setGender(gamer.getGender());
+        body.setEmail(gamer.getEmail());
+        body.setCoin(gamer.getCoin());
+        userInfoResponse.setBody(new BaseBody<>(body));
+        userInfoResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return userInfoResponse;
+    }
+
+    @Override
     public KeywordsResponse getKeywords() {
         List<KeywordsDto> keywordsDtoList = new ArrayList<>();
         List<Keywords> keywordsList = keywordsRepository.findAll();

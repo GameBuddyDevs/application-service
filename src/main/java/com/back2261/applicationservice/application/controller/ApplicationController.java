@@ -22,6 +22,12 @@ public class ApplicationController {
     private static final String AUTHORIZATION = "Authorization";
     private static final String AUTH_MESSAGE = "Authorization field cannot be empty";
 
+    @GetMapping("/get/user/info")
+    public ResponseEntity<UserInfoResponse> getUserInfo(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token) {
+        return new ResponseEntity<>(applicationService.getUserInfo(token.substring(7)), HttpStatus.OK);
+    }
+
     @GetMapping("/get/keywords")
     public ResponseEntity<KeywordsResponse> getKeywords() {
         return new ResponseEntity<>(applicationService.getKeywords(), HttpStatus.OK);

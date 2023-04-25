@@ -55,7 +55,7 @@ class ApplicationControllerTest {
 
     @BeforeEach
     void setUp() {
-        token = "test";
+        token = "3745290384765934782659238q475";
         friendsResponse = new FriendsResponse();
         FriendsResponseBody friendsResponseBody = new FriendsResponseBody();
         List<GamerDto> friends = new ArrayList<>();
@@ -68,6 +68,35 @@ class ApplicationControllerTest {
         defaultMessageResponse = new DefaultMessageResponse();
         DefaultMessageBody defaultMessageBody = new DefaultMessageBody("test");
         defaultMessageResponse.setBody(new BaseBody<>(defaultMessageBody));
+    }
+
+    @Test
+    void testGetUserInfo_whenRequested_shouldReturnUsersInfo() throws Exception {
+        UserInfoResponse userInfoResponse = new UserInfoResponse();
+        UserInfoResponseBody body = new UserInfoResponseBody();
+        body.setCountry("test");
+        body.setGender("M");
+        body.setAvatar("test");
+        body.setCoin(100);
+        body.setAge("18");
+        body.setEmail("test");
+        body.setUsername("test");
+        userInfoResponse.setBody(new BaseBody<>(body));
+
+        Mockito.when(defaultApplicationService.getUserInfo(Mockito.anyString())).thenReturn(userInfoResponse);
+
+        var request = MockMvcRequestBuilders.get("/application/get/user/info")
+                .contentType("application/json")
+                .header("Authorization", token);
+        var response = mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+        String responseJson = response.getResponse().getContentAsString();
+
+        UserInfoResponse responseObj = objectMapper.readValue(responseJson, UserInfoResponse.class);
+        assertEquals(200, response.getResponse().getStatus());
+        assertEquals("test", responseObj.getBody().getData().getUsername());
     }
 
     @Test

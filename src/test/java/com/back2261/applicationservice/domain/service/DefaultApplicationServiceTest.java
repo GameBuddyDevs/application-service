@@ -53,6 +53,32 @@ class DefaultApplicationServiceTest {
     }
 
     @Test
+    void testGetUserInfo_whenCalledAndNullAvatar_ReturnUserInfo() {
+        Gamer gamer = getGamer();
+        gamer.setAvatar(null);
+        Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
+        Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+
+        UserInfoResponse result = defaultApplicationService.getUserInfo(token);
+        assertEquals("test", result.getBody().getData().getUsername());
+        assertEquals("", result.getBody().getData().getAvatar());
+        assertEquals("100", result.getStatus().getCode());
+    }
+
+    @Test
+    void testGetUserInfo_whenCalledAndHaveAvatar_ReturnUserInfo() {
+        Gamer gamer = getGamer();
+
+        Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
+        Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+        Mockito.when(avatarsRepository.findById(Mockito.any(UUID.class))).thenReturn(Optional.of(new Avatars()));
+
+        UserInfoResponse result = defaultApplicationService.getUserInfo(token);
+        assertEquals("test", result.getBody().getData().getUsername());
+        assertEquals("100", result.getStatus().getCode());
+    }
+
+    @Test
     void testGetKeywords_whenCalled_ReturnKeywords() {
         List<Keywords> keywords = new ArrayList<>();
         keywords.add(new Keywords());
@@ -763,7 +789,7 @@ class DefaultApplicationServiceTest {
         gamer.setEmail("test");
         gamer.setAge(15);
         gamer.setCountry("test");
-        gamer.setAvatar("test");
+        gamer.setAvatar("71927b70-8a51-4844-a306-00313fec4f09");
         gamer.setLastModifiedDate(new Date());
         gamer.setPwd("test");
         gamer.setGender("E");
