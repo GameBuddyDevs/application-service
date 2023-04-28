@@ -1,9 +1,7 @@
 package com.back2261.applicationservice.infrastructure.entity;
 
 import jakarta.persistence.*;
-
 import java.util.*;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

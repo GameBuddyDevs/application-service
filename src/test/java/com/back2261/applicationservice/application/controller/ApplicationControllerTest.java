@@ -133,7 +133,7 @@ class ApplicationControllerTest {
         game.setAvgVote(7.7F);
         game.setGameName("test");
         game.setCategory("test");
-        game.setGameIcon(new byte[0]);
+        game.setGameIcon("test");
         game.setDescription("test");
         games.add(game);
         games.add(new GamesDto());
