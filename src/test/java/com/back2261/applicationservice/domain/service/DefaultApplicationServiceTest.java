@@ -372,7 +372,7 @@ class DefaultApplicationServiceTest {
     @Test
     void testGetFriends_whenAchievementAlreadyEarned_ReturnListOfFriends() {
         Gamer gamer = getGamer();
-        gamer.getFriends().add(new Gamer());
+        gamer.getFriends().add(getGamer());
         gamer.getGamerEarnedAchievements().add(getAchievement());
 
         Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
@@ -388,7 +388,7 @@ class DefaultApplicationServiceTest {
     @Test
     void testGetFriends_whenAchievementEarned_ReturnListOfFriends() {
         Gamer gamer = getGamer();
-        gamer.getFriends().add(new Gamer());
+        gamer.getFriends().add(getGamer());
 
         Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
         Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
@@ -404,8 +404,8 @@ class DefaultApplicationServiceTest {
     @Test
     void testGetFriends_whenCalledWithValidToken_ReturnListOfFriends() {
         Gamer gamer = getGamer();
-        gamer.getFriends().add(new Gamer());
-        gamer.getFriends().add(new Gamer());
+        gamer.getFriends().add(getGamer());
+        gamer.getFriends().add(getGamer());
 
         Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
         Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
@@ -418,8 +418,8 @@ class DefaultApplicationServiceTest {
     @Test
     void testGetWaitingFriends_whenCalledWithValidToken_ReturnListOfFriendRequests() {
         Gamer gamer = getGamer();
-        gamer.getWaitingFriends().add(new Gamer());
-        gamer.getWaitingFriends().add(new Gamer());
+        gamer.getWaitingFriends().add(getGamer());
+        gamer.getWaitingFriends().add(getGamer());
 
         Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
         Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
@@ -432,8 +432,8 @@ class DefaultApplicationServiceTest {
     @Test
     void testGetBlockedFriends_whenCalledWithValidToken_ReturnListOfBlockedUsers() {
         Gamer gamer = getGamer();
-        gamer.getBlockedFriends().add(new Gamer());
-        gamer.getBlockedFriends().add(new Gamer());
+        gamer.getBlockedFriends().add(getGamer());
+        gamer.getBlockedFriends().add(getGamer());
 
         Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
         Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
@@ -789,7 +789,7 @@ class DefaultApplicationServiceTest {
         gamer.setEmail("test");
         gamer.setAge(15);
         gamer.setCountry("test");
-        gamer.setAvatar("71927b70-8a51-4844-a306-00313fec4f09");
+        gamer.setAvatar(UUID.fromString("71927b70-8a51-4844-a306-00313fec4f09"));
         gamer.setLastModifiedDate(new Date());
         gamer.setPwd("test");
         gamer.setGender("E");

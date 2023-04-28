@@ -1,10 +1,9 @@
 package com.back2261.applicationservice.infrastructure.entity;
 
 import jakarta.persistence.*;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+
+import java.util.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,12 +31,10 @@ public class Gamer implements UserDetails {
 
     private Integer age;
     private String country;
-    private String avatar;
+    private UUID avatar;
 
     @UpdateTimestamp
     private Date lastModifiedDate;
-
-    private Date lastOnlineDate;
 
     private String pwd;
     private String gender;

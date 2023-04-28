@@ -8,7 +8,7 @@ import lombok.Setter;
 public class GamesDto {
     private String gameId;
     private String gameName;
-    private byte[] gameIcon;
+    private String gameIcon;
     private String category;
     private Float avgVote;
     private String description;

@@ -9,4 +9,5 @@ import lombok.Setter;
 public class KeywordsDto {
     private UUID id;
     private String keywordName;
+    private String description;
 }

@@ -29,6 +29,8 @@ public class Keywords implements Serializable {
     @CreationTimestamp
     private Date createdDate;
 
+    private String description;
+
     @ManyToMany(mappedBy = "keywords")
     private Set<Gamer> gamers;
 }

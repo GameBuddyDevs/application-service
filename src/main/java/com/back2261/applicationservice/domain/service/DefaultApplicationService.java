@@ -51,7 +51,7 @@ public class DefaultApplicationService implements ApplicationService {
         String avatar = "";
         if (Objects.nonNull(gamer.getAvatar())) {
             avatar = avatarsRepository
-                    .findById(UUID.fromString(gamer.getAvatar()))
+                    .findById(gamer.getAvatar())
                     .orElseThrow(() -> new BusinessException(TransactionCode.AVATAR_NOT_FOUND))
                     .getImage();
         }
@@ -521,8 +521,7 @@ public class DefaultApplicationService implements ApplicationService {
             friendDto.setUsername(friend.getGamerUsername());
             friendDto.setAge(friend.getAge());
             friendDto.setCountry(friend.getCountry());
-            friendDto.setLastOnlineDate(friend.getLastOnlineDate());
-            friendDto.setAvatar(friend.getAvatar());
+            friendDto.setAvatar(friend.getAvatar().toString());
             friendDtoList.add(friendDto);
         }
     }
