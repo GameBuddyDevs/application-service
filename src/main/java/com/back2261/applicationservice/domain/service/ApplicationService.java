@@ -7,7 +7,7 @@ import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 
 public interface ApplicationService {
 
-    UserInfoResponse getUserInfo(String token);
+    UserInfoResponse getUserInfo(FriendRequest userRequest);
 
     KeywordsResponse getKeywords();
 
@@ -44,4 +44,6 @@ public interface ApplicationService {
     DefaultMessageResponse saveMessageToMongo(String token, MessageRequest messageRequest);
 
     ConversationResponse getUserConversation(String token, FriendRequest friendRequest);
+
+    InboxResponse getInbox(String token);
 }

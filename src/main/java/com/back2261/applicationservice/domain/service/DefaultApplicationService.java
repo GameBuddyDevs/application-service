@@ -2,12 +2,14 @@ package com.back2261.applicationservice.domain.service;
 
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Indexes.ascending;
+import static com.mongodb.client.model.Indexes.descending;
 
 import com.back2261.applicationservice.infrastructure.entity.*;
 import com.back2261.applicationservice.infrastructure.repository.*;
 import com.back2261.applicationservice.interfaces.dto.*;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
 import com.back2261.applicationservice.interfaces.request.MessageRequest;
+import com.back2261.applicationservice.interfaces.request.SendNotificationTokenRequest;
 import com.back2261.applicationservice.interfaces.response.*;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
@@ -20,6 +22,7 @@ import io.github.GameBuddyDevs.backendlibrary.exception.BusinessException;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageBody;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 import io.github.GameBuddyDevs.backendlibrary.service.JwtService;
+import io.github.GameBuddyDevs.backendlibrary.util.Constants;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -38,6 +41,7 @@ public class DefaultApplicationService implements ApplicationService {
     private final AchievementsRepository achievementRepository;
     private final JwtService jwtService;
     private final MongoClient mongoClient;
+    private final NotificationService notificationService;
 
     @Value("${spring.data.mongodb.database}")
     private String mongoDbDatabase;
@@ -46,15 +50,34 @@ public class DefaultApplicationService implements ApplicationService {
     private String mongoDbCollection;
 
     @Override
-    public UserInfoResponse getUserInfo(String token) {
-        Gamer gamer = extractGamer(token);
-        String avatar = "";
-        if (Objects.nonNull(gamer.getAvatar())) {
-            avatar = avatarsRepository
-                    .findById(gamer.getAvatar())
-                    .orElseThrow(() -> new BusinessException(TransactionCode.AVATAR_NOT_FOUND))
-                    .getImage();
-        }
+    public UserInfoResponse getUserInfo(FriendRequest userRequest) {
+        String userId = userRequest.getUserId();
+        Gamer gamer = gamerRepository
+                .findById(userId)
+                .orElseThrow(() -> new BusinessException(TransactionCode.USER_NOT_FOUND));
+        String avatar = avatarsRepository
+                .findById(gamer.getAvatar())
+                .orElse(new Avatars())
+                .getImage();
+        Set<Games> gamesList = gamer.getLikedgames();
+        Set<Keywords> keywordsList = gamer.getKeywords();
+        Set<Achievements> earnedAchievements = gamer.getGamerEarnedAchievements();
+
+        List<GamesDto> gamesDtoList = new ArrayList<>();
+        List<KeywordsDto> keywordsDtoList = new ArrayList<>();
+
+        mapGamesToDto(gamesList.stream().toList(), gamesDtoList);
+        mapKeywordsToDto(keywordsList.stream().toList(), keywordsDtoList);
+
+        Set<Community> joinedCommunities = gamer.getJoinedCommunities();
+        List<CommunityDto> communityDtoList = new ArrayList<>();
+        joinedCommunities.forEach(community -> {
+            CommunityDto communityDto = new CommunityDto();
+            BeanUtils.copyProperties(community, communityDto);
+            communityDto.setIsOwner(community.getOwner().getUserId().equals(userId));
+            communityDtoList.add(communityDto);
+        });
+
         UserInfoResponse userInfoResponse = new UserInfoResponse();
         UserInfoResponseBody body = new UserInfoResponseBody();
         body.setAge(String.valueOf(gamer.getAge()));
@@ -64,6 +87,10 @@ public class DefaultApplicationService implements ApplicationService {
         body.setGender(gamer.getGender());
         body.setEmail(gamer.getEmail());
         body.setCoin(gamer.getCoin());
+        body.setGames(gamesDtoList);
+        body.setKeywords(keywordsDtoList);
+        body.setAchievements(earnedAchievements.stream().toList());
+        body.setJoinedCommunities(communityDtoList);
         userInfoResponse.setBody(new BaseBody<>(body));
         userInfoResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return userInfoResponse;
@@ -218,8 +245,7 @@ public class DefaultApplicationService implements ApplicationService {
             Achievements achievement = achievementRepository
                     .findByAchievementName("Rich in the hood!!!")
                     .orElseThrow(() -> new BusinessException(TransactionCode.ACHIEVEMENT_NOT_FOUND));
-            gamer.getGamerEarnedAchievements().add(achievement);
-            // TODO: Send notification
+            setAchievementAndSendNotification(gamer, achievement);
         }
         gamerRepository.save(gamer);
         DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
@@ -239,8 +265,7 @@ public class DefaultApplicationService implements ApplicationService {
                     .findByAchievementName("Friendly Person!!!")
                     .orElseThrow(() -> new BusinessException(TransactionCode.ACHIEVEMENT_NOT_FOUND));
             if (Boolean.FALSE.equals(gamer.getGamerEarnedAchievements().contains(achievement))) {
-                gamer.getGamerEarnedAchievements().add(achievement);
-                // TODO: Send notification
+                setAchievementAndSendNotification(gamer, achievement);
             }
         }
         return getFriendsResponse(friendDtoList, friends);
@@ -282,6 +307,16 @@ public class DefaultApplicationService implements ApplicationService {
         gamerRepository.save(gamer);
         user.getFriends().add(gamer);
         gamerRepository.save(user);
+
+        SendNotificationTokenRequest tokenRequest = new SendNotificationTokenRequest();
+        tokenRequest.setToken(user.getFcmToken());
+        tokenRequest.setTitle(Constants.FRIEND_REQUEST_ACCEPTED_TITLE);
+        tokenRequest.setBody(String.format(Constants.FRIEND_REQUEST_ACCEPTED_BODY, gamer.getGamerUsername()));
+        try {
+            notificationService.sendToToken(tokenRequest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
         DefaultMessageBody body = new DefaultMessageBody("Friend added successfully");
@@ -414,7 +449,15 @@ public class DefaultApplicationService implements ApplicationService {
         user.getWaitingFriends().add(gamer);
         gamerRepository.save(user);
 
-        // TODO: Notification gönderilecek user a
+        SendNotificationTokenRequest tokenRequest = new SendNotificationTokenRequest();
+        tokenRequest.setToken(user.getFcmToken());
+        tokenRequest.setTitle(Constants.FRIENT_REQUEST_TITLE);
+        tokenRequest.setBody(String.format(Constants.FRIENT_REQUEST_BODY, gamer.getGamerUsername()));
+        try {
+            notificationService.sendToToken(tokenRequest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
         DefaultMessageBody body = new DefaultMessageBody("Friend request sent successfully");
@@ -431,7 +474,6 @@ public class DefaultApplicationService implements ApplicationService {
         Message message = new Message();
         message.setMessageBody(messageRequest.getMessage());
         message.setId(UUID.randomUUID().toString());
-        message.setRead(messageRequest.isRead());
         message.setSender(gamer.getUserId());
         message.setReceiver(messageRequest.getReceiverId());
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -480,6 +522,85 @@ public class DefaultApplicationService implements ApplicationService {
         return conversationResponse;
     }
 
+    @Override
+    public InboxResponse getInbox(String token) {
+        Gamer gamer = extractGamer(token);
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
+        MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
+        List<Message> lastSentMessages = new ArrayList<>();
+        List<String> receivers = collection
+                .distinct("receiver", String.class)
+                .filter(eq("sender", gamer.getUserId()))
+                .into(new ArrayList<>());
+        List<String> senders = collection
+                .distinct("sender", String.class)
+                .filter(eq("receiver", gamer.getUserId()))
+                .into(new ArrayList<>());
+        Set<String> total = new HashSet<>();
+        total.addAll(receivers);
+        total.addAll(senders);
+
+        for (String user : total) {
+            Message receivedMessage = collection
+                    .find(eq("receiver", gamer.getUserId()))
+                    .filter(eq("sender", user))
+                    .sort(descending("date"))
+                    .first();
+            Message sentMessage = collection
+                    .find(eq("sender", gamer.getUserId()))
+                    .filter(eq("receiver", user))
+                    .sort(descending("date"))
+                    .first();
+
+            if (receivedMessage != null && sentMessage != null) {
+                if (receivedMessage.getDate().compareTo(sentMessage.getDate()) > 0) {
+                    lastSentMessages.add(receivedMessage);
+                } else {
+                    lastSentMessages.add(sentMessage);
+                }
+            } else {
+                lastSentMessages.add(receivedMessage == null ? sentMessage : receivedMessage);
+            }
+        }
+
+        List<InboxDto> inboxDtoList = new ArrayList<>();
+        for (Message message : lastSentMessages) {
+            InboxDto inboxDto = new InboxDto();
+            Gamer user;
+            if (message.getSender().equals(gamer.getUserId())) {
+                user = getGamerFromId(message.getReceiver());
+            } else {
+                user = getGamerFromId(message.getSender());
+            }
+            inboxDto.setUserId(user.getUserId());
+            inboxDto.setUsername(user.getGamerUsername());
+            Avatars avatar = avatarsRepository.findById(user.getAvatar()).orElse(new Avatars());
+            inboxDto.setAvatar(avatar.getImage());
+            inboxDto.setLastMessage(message.getMessageBody());
+            inboxDto.setLastMessageTime(message.getDate());
+            inboxDtoList.add(inboxDto);
+        }
+        InboxResponse inboxResponse = new InboxResponse();
+        InboxResponseBody body = new InboxResponseBody();
+        body.setInboxList(inboxDtoList);
+        inboxResponse.setBody(new BaseBody<>(body));
+        inboxResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return inboxResponse;
+    }
+
+    private void setAchievementAndSendNotification(Gamer gamer, Achievements achievement) {
+        gamer.getGamerEarnedAchievements().add(achievement);
+        SendNotificationTokenRequest tokenRequest = new SendNotificationTokenRequest();
+        tokenRequest.setToken(gamer.getFcmToken());
+        tokenRequest.setTitle(Constants.ACHIEVEMENT_TITLE);
+        tokenRequest.setBody(String.format(Constants.ACHIEVEMENT_BODY, achievement.getAchievementName()));
+        try {
+            notificationService.sendToToken(tokenRequest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private FriendsResponse getFriendsResponse(List<GamerDto> friendDtoList, Set<Gamer> friends) {
         mapFriendsToDto(friends, friendDtoList);
         FriendsResponse friendsResponse = new FriendsResponse();
@@ -512,6 +633,14 @@ public class DefaultApplicationService implements ApplicationService {
             KeywordsDto keywordsDto = new KeywordsDto();
             BeanUtils.copyProperties(keywords, keywordsDto);
             keywordsDtoList.add(keywordsDto);
+        }
+    }
+
+    private void mapGamesToDto(List<Games> gamesList, List<GamesDto> gamesDtoList) {
+        for (Games games : gamesList) {
+            GamesDto gamesDto = new GamesDto();
+            BeanUtils.copyProperties(games, gamesDto);
+            gamesDtoList.add(gamesDto);
         }
     }
 

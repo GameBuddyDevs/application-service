@@ -83,11 +83,13 @@ class ApplicationControllerTest {
         body.setUsername("test");
         userInfoResponse.setBody(new BaseBody<>(body));
 
-        Mockito.when(defaultApplicationService.getUserInfo(Mockito.anyString())).thenReturn(userInfoResponse);
+        Mockito.when(defaultApplicationService.getUserInfo(Mockito.any(FriendRequest.class)))
+                .thenReturn(userInfoResponse);
 
         var request = MockMvcRequestBuilders.get("/application/get/user/info")
                 .contentType("application/json")
-                .header("Authorization", token);
+                .header("Authorization", token)
+                .content(objectMapper.writeValueAsString(friendRequest));
         var response = mockMvc.perform(request)
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -427,7 +429,6 @@ class ApplicationControllerTest {
         MessageRequest messageRequest = new MessageRequest();
         messageRequest.setMessage("test");
         messageRequest.setReceiverId("test");
-        messageRequest.setRead(false);
 
         Mockito.when(defaultApplicationService.saveMessageToMongo(token, messageRequest))
                 .thenReturn(defaultMessageResponse);

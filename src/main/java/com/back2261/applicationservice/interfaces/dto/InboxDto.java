@@ -5,9 +5,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class GamerDto {
+public class InboxDto {
+
+    private String userId;
     private String username;
-    private Integer age;
-    private String country;
     private String avatar;
+    private String lastMessage;
+    private String lastMessageTime;
 }

@@ -37,6 +37,7 @@ public class Gamer implements UserDetails {
     private String pwd;
     private String gender;
     private Boolean isBlocked = false;
+    private String fcmToken;
     private Integer coin;
 
     @ManyToMany
@@ -96,6 +97,14 @@ public class Gamer implements UserDetails {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "avatar_id"))
     private Set<Avatars> boughtAvatars;
+
+    @ManyToMany
+    @JoinTable(
+            name = "community_members_join",
+            schema = "schcomm",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "community_id"))
+    private Set<Community> joinedCommunities;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -45,6 +45,9 @@ class DefaultApplicationServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private NotificationService notificationService;
+
     private String token;
 
     @BeforeEach
@@ -53,27 +56,41 @@ class DefaultApplicationServiceTest {
     }
 
     @Test
-    void testGetUserInfo_whenCalledAndNullAvatar_ReturnUserInfo() {
-        Gamer gamer = getGamer();
-        gamer.setAvatar(null);
-        Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
-        Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+    void testGetUserInfo_whenUserNotFound_ReturnErrorCode103() {
+        FriendRequest friendRequest = new FriendRequest();
+        friendRequest.setUserId("test");
 
-        UserInfoResponse result = defaultApplicationService.getUserInfo(token);
+        Mockito.when(gamerRepository.findById(Mockito.anyString())).thenReturn(Optional.empty());
+
+        BusinessException exception =
+                assertThrows(BusinessException.class, () -> defaultApplicationService.getUserInfo(friendRequest));
+        assertEquals(103, exception.getTransactionCode().getId());
+    }
+
+    @Test
+    void testGetUserInfo_whenUserAvatarNotFound_ReturnUserInfo() {
+        FriendRequest friendRequest = new FriendRequest();
+        friendRequest.setUserId("test");
+        Gamer gamer = getGamer();
+
+        Mockito.when(gamerRepository.findById(Mockito.anyString())).thenReturn(Optional.of(gamer));
+        Mockito.when(avatarsRepository.findById(Mockito.any(UUID.class))).thenReturn(Optional.of(new Avatars()));
+
+        UserInfoResponse result = defaultApplicationService.getUserInfo(friendRequest);
         assertEquals("test", result.getBody().getData().getUsername());
-        assertEquals("", result.getBody().getData().getAvatar());
         assertEquals("100", result.getStatus().getCode());
     }
 
     @Test
     void testGetUserInfo_whenCalledAndHaveAvatar_ReturnUserInfo() {
+        FriendRequest friendRequest = new FriendRequest();
+        friendRequest.setUserId("test");
         Gamer gamer = getGamer();
 
-        Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
-        Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+        Mockito.when(gamerRepository.findById(Mockito.anyString())).thenReturn(Optional.of(gamer));
         Mockito.when(avatarsRepository.findById(Mockito.any(UUID.class))).thenReturn(Optional.of(new Avatars()));
 
-        UserInfoResponse result = defaultApplicationService.getUserInfo(token);
+        UserInfoResponse result = defaultApplicationService.getUserInfo(friendRequest);
         assertEquals("test", result.getBody().getData().getUsername());
         assertEquals("100", result.getStatus().getCode());
     }
@@ -803,6 +820,7 @@ class DefaultApplicationServiceTest {
         gamer.setGamerEarnedAchievements(new HashSet<>());
         gamer.setGamerCollectedAchievements(new HashSet<>());
         gamer.setBoughtAvatars(new HashSet<>());
+        gamer.setJoinedCommunities(new HashSet<>());
         return gamer;
     }
 

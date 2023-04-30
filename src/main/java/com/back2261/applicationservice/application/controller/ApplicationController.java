@@ -23,9 +23,8 @@ public class ApplicationController {
     private static final String AUTH_MESSAGE = "Authorization field cannot be empty";
 
     @GetMapping("/get/user/info")
-    public ResponseEntity<UserInfoResponse> getUserInfo(
-            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token) {
-        return new ResponseEntity<>(applicationService.getUserInfo(token.substring(7)), HttpStatus.OK);
+    public ResponseEntity<UserInfoResponse> getUserInfo(@Valid @RequestBody FriendRequest userRequest) {
+        return new ResponseEntity<>(applicationService.getUserInfo(userRequest), HttpStatus.OK);
     }
 
     @GetMapping("/get/keywords")
@@ -150,5 +149,11 @@ public class ApplicationController {
             @Valid @RequestBody FriendRequest friendRequest) {
         return new ResponseEntity<>(
                 applicationService.getUserConversation(token.substring(7), friendRequest), HttpStatus.OK);
+    }
+
+    @GetMapping("/get/inbox")
+    public ResponseEntity<InboxResponse> getInbox(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token) {
+        return new ResponseEntity<>(applicationService.getInbox(token.substring(7)), HttpStatus.OK);
     }
 }

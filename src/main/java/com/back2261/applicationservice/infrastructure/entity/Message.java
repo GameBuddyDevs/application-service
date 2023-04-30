@@ -15,5 +15,4 @@ public class Message implements Serializable {
     private String receiver;
     private String messageBody;
     private String date;
-    private boolean read;
 }

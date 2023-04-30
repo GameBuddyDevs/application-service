@@ -8,5 +8,4 @@ import lombok.Setter;
 public class MessageRequest {
     private String receiverId;
     private String message;
-    private boolean read;
 }
