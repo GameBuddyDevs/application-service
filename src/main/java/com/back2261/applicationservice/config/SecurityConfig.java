@@ -32,7 +32,7 @@ public class SecurityConfig {
                         "/application/get/keywords",
                         "/application/get/games",
                         "/application/get/marketplace",
-                        "/actuator/health")
+                        "/actuator/**")
                 .permitAll()
                 .requestMatchers("/api-docs/**", "/api-docs.yaml", "/swagger-ui/**", "/swagger-ui.html")
                 .permitAll()

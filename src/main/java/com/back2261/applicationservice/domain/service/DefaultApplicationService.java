@@ -10,6 +10,7 @@ import com.back2261.applicationservice.interfaces.request.FriendRequest;
 import com.back2261.applicationservice.interfaces.request.MessageRequest;
 import com.back2261.applicationservice.interfaces.request.SendNotificationTokenRequest;
 import com.back2261.applicationservice.interfaces.response.*;
+import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -499,19 +500,25 @@ public class DefaultApplicationService implements ApplicationService {
     @Override
     public ConversationResponse getUserConversation(String friendId, String token) {
         Gamer gamer = extractGamer(token);
+        String userId = gamer.getUserId();
         if (Objects.equals(gamer.getUserId(), friendId)) {
             throw new BusinessException(TransactionCode.SAME_IDS); // Kendin ile konuşma yapamazsın
         }
         Gamer friend = getGamerFromId(friendId);
         MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
         MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
-        FindIterable<Message> sendedMessages =
-                collection.find(eq("sender", gamer.getUserId())).filter(eq("receiver", friend.getUserId()));
-        FindIterable<Message> recievedMessages =
-                collection.find(eq("receiver", gamer.getUserId())).filter(eq("sender", friend.getUserId()));
+        BasicDBObject query = new BasicDBObject();
+        query.put("sender", userId);
+        query.put("receiver", friend.getUserId());
+        BasicDBObject query2 = new BasicDBObject();
+        query2.put("sender", friend.getUserId());
+        query2.put("receiver", userId);
+        FindIterable<Message> sendedMessages = collection.find(query);
+        FindIterable<Message> recievedMessages = collection.find(query2);
         List<Message> messageList = new ArrayList<>();
         sendedMessages.into(messageList);
         recievedMessages.into(messageList);
+
         List<ConversationDto> conversationDtoList = new ArrayList<>();
         for (Message message : messageList) {
             ConversationDto conversationDto = new ConversationDto();
@@ -548,16 +555,16 @@ public class DefaultApplicationService implements ApplicationService {
         total.addAll(senders);
 
         for (String user : total) {
-            Message receivedMessage = collection
-                    .find(eq("receiver", gamer.getUserId()))
-                    .filter(eq("sender", user))
-                    .sort(descending("date"))
-                    .first();
-            Message sentMessage = collection
-                    .find(eq("sender", gamer.getUserId()))
-                    .filter(eq("receiver", user))
-                    .sort(descending("date"))
-                    .first();
+            BasicDBObject query = new BasicDBObject();
+            query.put("receiver", gamer.getUserId());
+            query.put("sender", user);
+            BasicDBObject query2 = new BasicDBObject();
+            query2.put("sender", gamer.getUserId());
+            query2.put("receiver", user);
+            Message receivedMessage =
+                    collection.find(query).sort(descending("date")).first();
+            Message sentMessage =
+                    collection.find(query2).sort(descending("date")).first();
 
             if (receivedMessage != null && sentMessage != null) {
                 if (receivedMessage.getDate().compareTo(sentMessage.getDate()) > 0) {
