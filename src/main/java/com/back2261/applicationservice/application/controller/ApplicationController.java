@@ -7,6 +7,7 @@ import com.back2261.applicationservice.interfaces.response.*;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.text.ParseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +23,11 @@ public class ApplicationController {
     private static final String AUTHORIZATION = "Authorization";
     private static final String AUTH_MESSAGE = "Authorization field cannot be empty";
 
-    @GetMapping("/get/user/info")
-    public ResponseEntity<UserInfoResponse> getUserInfo(@Valid @RequestBody FriendRequest userRequest) {
-        return new ResponseEntity<>(applicationService.getUserInfo(userRequest), HttpStatus.OK);
+    @GetMapping("/get/user/info/{userId}")
+    public ResponseEntity<UserInfoResponse> getUserInfo(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
+            @Valid @PathVariable String userId) {
+        return new ResponseEntity<>(applicationService.getUserInfo(userId), HttpStatus.OK);
     }
 
     @GetMapping("/get/keywords")
@@ -138,17 +141,18 @@ public class ApplicationController {
     @PostMapping("/save/message")
     public ResponseEntity<DefaultMessageResponse> saveMessageToMongo(
             @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
-            @Valid @RequestBody MessageRequest messageRequest) {
+            @Valid @RequestBody MessageRequest messageRequest)
+            throws ParseException {
         return new ResponseEntity<>(
                 applicationService.saveMessageToMongo(token.substring(7), messageRequest), HttpStatus.OK);
     }
 
-    @GetMapping("/get/messages")
+    @GetMapping("/get/messages/{friendId}")
     public ResponseEntity<ConversationResponse> getMessages(
             @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
-            @Valid @RequestBody FriendRequest friendRequest) {
+            @Valid @PathVariable String friendId) {
         return new ResponseEntity<>(
-                applicationService.getUserConversation(token.substring(7), friendRequest), HttpStatus.OK);
+                applicationService.getUserConversation(friendId, token.substring(7)), HttpStatus.OK);
     }
 
     @GetMapping("/get/inbox")

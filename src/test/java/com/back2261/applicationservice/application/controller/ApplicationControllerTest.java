@@ -83,10 +83,9 @@ class ApplicationControllerTest {
         body.setUsername("test");
         userInfoResponse.setBody(new BaseBody<>(body));
 
-        Mockito.when(defaultApplicationService.getUserInfo(Mockito.any(FriendRequest.class)))
-                .thenReturn(userInfoResponse);
+        Mockito.when(defaultApplicationService.getUserInfo(Mockito.anyString())).thenReturn(userInfoResponse);
 
-        var request = MockMvcRequestBuilders.get("/application/get/user/info")
+        var request = MockMvcRequestBuilders.get("/application/get/user/info/test")
                 .contentType("application/json")
                 .header("Authorization", token)
                 .content(objectMapper.writeValueAsString(friendRequest));
@@ -447,24 +446,23 @@ class ApplicationControllerTest {
 
     @Test
     void testGetMessages_whenValidIdProvided_shouldReturnMessageHistory() throws Exception {
-        FriendRequest friendRequest = new FriendRequest();
-        friendRequest.setUserId("test");
+        String friendId = "test";
         ConversationResponse conversationResponse = new ConversationResponse();
         ConversationResponseBody body = new ConversationResponseBody();
         List<ConversationDto> conversationDtos = new ArrayList<>();
         ConversationDto conversationDto = new ConversationDto();
         conversationDto.setMessage("test");
-        conversationDto.setDate(String.valueOf(new Date()));
+        conversationDto.setDate(new Date());
         conversationDto.setSender("test");
         conversationDtos.add(conversationDto);
         conversationDtos.add(conversationDto);
         body.setConversations(conversationDtos);
         conversationResponse.setBody(new BaseBody<>(body));
 
-        Mockito.when(defaultApplicationService.getUserConversation(token, friendRequest))
+        Mockito.when(defaultApplicationService.getUserConversation(friendId, token))
                 .thenReturn(conversationResponse);
 
-        var request = MockMvcRequestBuilders.get("/application/get/messages")
+        var request = MockMvcRequestBuilders.get("/application/get/messages/" + friendId)
                 .contentType("application/json")
                 .header("Authorization", "Bearer " + token)
                 .content(objectMapper.writeValueAsString(friendRequest));

@@ -1,7 +1,6 @@
 package com.back2261.applicationservice.domain.service;
 
 import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Indexes.ascending;
 import static com.mongodb.client.model.Indexes.descending;
 
 import com.back2261.applicationservice.infrastructure.entity.*;
@@ -50,8 +49,7 @@ public class DefaultApplicationService implements ApplicationService {
     private String mongoDbCollection;
 
     @Override
-    public UserInfoResponse getUserInfo(FriendRequest userRequest) {
-        String userId = userRequest.getUserId();
+    public UserInfoResponse getUserInfo(String userId) {
         Gamer gamer = gamerRepository
                 .findById(userId)
                 .orElseThrow(() -> new BusinessException(TransactionCode.USER_NOT_FOUND));
@@ -74,9 +72,13 @@ public class DefaultApplicationService implements ApplicationService {
         joinedCommunities.forEach(community -> {
             CommunityDto communityDto = new CommunityDto();
             BeanUtils.copyProperties(community, communityDto);
+            communityDto.setCommunityId(String.valueOf(community.getCommunityId()));
             communityDto.setIsOwner(community.getOwner().getUserId().equals(userId));
             communityDtoList.add(communityDto);
         });
+        Set<Gamer> friends = gamer.getFriends();
+        List<GamerDto> friendsDtoList = new ArrayList<>();
+        mapFriendsToDto(friends, friendsDtoList);
 
         UserInfoResponse userInfoResponse = new UserInfoResponse();
         UserInfoResponseBody body = new UserInfoResponseBody();
@@ -91,6 +93,7 @@ public class DefaultApplicationService implements ApplicationService {
         body.setKeywords(keywordsDtoList);
         body.setAchievements(earnedAchievements.stream().toList());
         body.setJoinedCommunities(communityDtoList);
+        body.setFriends(friendsDtoList);
         userInfoResponse.setBody(new BaseBody<>(body));
         userInfoResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
         return userInfoResponse;
@@ -477,7 +480,13 @@ public class DefaultApplicationService implements ApplicationService {
         message.setSender(gamer.getUserId());
         message.setReceiver(messageRequest.getReceiverId());
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        message.setDate(dateFormat.format(new Date()));
+        String dateString = dateFormat.format(new Date());
+        try {
+            Date date = dateFormat.parse(dateString);
+            message.setDate(date);
+        } catch (Exception e) {
+            throw new BusinessException(TransactionCode.DB_ERROR);
+        }
         collection.insertOne(message);
 
         DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
@@ -488,22 +497,18 @@ public class DefaultApplicationService implements ApplicationService {
     }
 
     @Override
-    public ConversationResponse getUserConversation(String token, FriendRequest friendRequest) {
+    public ConversationResponse getUserConversation(String friendId, String token) {
         Gamer gamer = extractGamer(token);
-        if (Objects.equals(gamer.getUserId(), friendRequest.getUserId())) {
+        if (Objects.equals(gamer.getUserId(), friendId)) {
             throw new BusinessException(TransactionCode.SAME_IDS); // Kendin ile konuşma yapamazsın
         }
-        Gamer friend = getGamerFromId(friendRequest.getUserId());
+        Gamer friend = getGamerFromId(friendId);
         MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
         MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
-        FindIterable<Message> sendedMessages = collection
-                .find(eq("sender", gamer.getUserId()))
-                .filter(eq("receiver", friend.getUserId()))
-                .sort(ascending("date"));
-        FindIterable<Message> recievedMessages = collection
-                .find(eq("sender", friend.getUserId()))
-                .filter(eq("receiver", gamer.getUserId()))
-                .sort(ascending("date"));
+        FindIterable<Message> sendedMessages =
+                collection.find(eq("sender", gamer.getUserId())).filter(eq("receiver", friend.getUserId()));
+        FindIterable<Message> recievedMessages =
+                collection.find(eq("receiver", gamer.getUserId())).filter(eq("sender", friend.getUserId()));
         List<Message> messageList = new ArrayList<>();
         sendedMessages.into(messageList);
         recievedMessages.into(messageList);
@@ -511,8 +516,10 @@ public class DefaultApplicationService implements ApplicationService {
         for (Message message : messageList) {
             ConversationDto conversationDto = new ConversationDto();
             BeanUtils.copyProperties(message, conversationDto);
+            conversationDto.setMessage(message.getMessageBody());
             conversationDtoList.add(conversationDto);
         }
+        conversationDtoList.sort(Comparator.comparing(ConversationDto::getDate));
 
         ConversationResponse conversationResponse = new ConversationResponse();
         ConversationResponseBody body = new ConversationResponseBody();
@@ -577,7 +584,7 @@ public class DefaultApplicationService implements ApplicationService {
             Avatars avatar = avatarsRepository.findById(user.getAvatar()).orElse(new Avatars());
             inboxDto.setAvatar(avatar.getImage());
             inboxDto.setLastMessage(message.getMessageBody());
-            inboxDto.setLastMessageTime(message.getDate());
+            inboxDto.setLastMessageTime(String.valueOf(message.getDate()));
             inboxDtoList.add(inboxDto);
         }
         InboxResponse inboxResponse = new InboxResponse();
@@ -647,9 +654,8 @@ public class DefaultApplicationService implements ApplicationService {
     private void mapFriendsToDto(Set<Gamer> friends, List<GamerDto> friendDtoList) {
         for (Gamer friend : friends) {
             GamerDto friendDto = new GamerDto();
+            BeanUtils.copyProperties(friend, friendDto);
             friendDto.setUsername(friend.getGamerUsername());
-            friendDto.setAge(friend.getAge());
-            friendDto.setCountry(friend.getCountry());
             friendDto.setAvatar(friend.getAvatar().toString());
             friendDtoList.add(friendDto);
         }

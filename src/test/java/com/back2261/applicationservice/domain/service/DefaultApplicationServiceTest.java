@@ -57,40 +57,34 @@ class DefaultApplicationServiceTest {
 
     @Test
     void testGetUserInfo_whenUserNotFound_ReturnErrorCode103() {
-        FriendRequest friendRequest = new FriendRequest();
-        friendRequest.setUserId("test");
 
         Mockito.when(gamerRepository.findById(Mockito.anyString())).thenReturn(Optional.empty());
 
         BusinessException exception =
-                assertThrows(BusinessException.class, () -> defaultApplicationService.getUserInfo(friendRequest));
+                assertThrows(BusinessException.class, () -> defaultApplicationService.getUserInfo(token));
         assertEquals(103, exception.getTransactionCode().getId());
     }
 
     @Test
     void testGetUserInfo_whenUserAvatarNotFound_ReturnUserInfo() {
-        FriendRequest friendRequest = new FriendRequest();
-        friendRequest.setUserId("test");
         Gamer gamer = getGamer();
 
         Mockito.when(gamerRepository.findById(Mockito.anyString())).thenReturn(Optional.of(gamer));
         Mockito.when(avatarsRepository.findById(Mockito.any(UUID.class))).thenReturn(Optional.of(new Avatars()));
 
-        UserInfoResponse result = defaultApplicationService.getUserInfo(friendRequest);
+        UserInfoResponse result = defaultApplicationService.getUserInfo(token);
         assertEquals("test", result.getBody().getData().getUsername());
         assertEquals("100", result.getStatus().getCode());
     }
 
     @Test
     void testGetUserInfo_whenCalledAndHaveAvatar_ReturnUserInfo() {
-        FriendRequest friendRequest = new FriendRequest();
-        friendRequest.setUserId("test");
         Gamer gamer = getGamer();
 
         Mockito.when(gamerRepository.findById(Mockito.anyString())).thenReturn(Optional.of(gamer));
         Mockito.when(avatarsRepository.findById(Mockito.any(UUID.class))).thenReturn(Optional.of(new Avatars()));
 
-        UserInfoResponse result = defaultApplicationService.getUserInfo(friendRequest);
+        UserInfoResponse result = defaultApplicationService.getUserInfo(token);
         assertEquals("test", result.getBody().getData().getUsername());
         assertEquals("100", result.getStatus().getCode());
     }

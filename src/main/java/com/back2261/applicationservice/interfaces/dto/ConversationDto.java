@@ -1,5 +1,6 @@
 package com.back2261.applicationservice.interfaces.dto;
 
+import java.util.Date;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,5 +9,5 @@ import lombok.Setter;
 public class ConversationDto {
     private String sender;
     private String message;
-    private String date;
+    private Date date;
 }

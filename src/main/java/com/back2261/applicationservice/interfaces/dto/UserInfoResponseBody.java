@@ -20,4 +20,5 @@ public class UserInfoResponseBody extends BaseModel {
     private List<KeywordsDto> keywords;
     private List<Achievements> achievements;
     private List<CommunityDto> joinedCommunities;
+    private List<GamerDto> friends;
 }
