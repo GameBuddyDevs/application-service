@@ -1,10 +1,8 @@
 package com.back2261.applicationservice.domain.service;
 
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
-import com.back2261.applicationservice.interfaces.request.MessageRequest;
 import com.back2261.applicationservice.interfaces.response.*;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
-import java.text.ParseException;
 
 public interface ApplicationService {
 
@@ -13,6 +11,8 @@ public interface ApplicationService {
     KeywordsResponse getKeywords();
 
     GamesResponse getGames();
+
+    GamesResponse getPopularGames();
 
     AvatarsResponse getAvatars(String token);
 
@@ -41,10 +41,4 @@ public interface ApplicationService {
     DefaultMessageResponse unblockUser(FriendRequest unblockFriendRequest, String token);
 
     DefaultMessageResponse sendFriendRequest(FriendRequest sendFriendRequest, String token);
-
-    DefaultMessageResponse saveMessageToMongo(String token, MessageRequest messageRequest) throws ParseException;
-
-    ConversationResponse getUserConversation(String friendId, String token);
-
-    InboxResponse getInbox(String token);
 }
