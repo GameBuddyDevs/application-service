@@ -1,20 +1,11 @@
 package com.back2261.applicationservice.domain.service;
 
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Indexes.descending;
-
 import com.back2261.applicationservice.infrastructure.entity.*;
 import com.back2261.applicationservice.infrastructure.repository.*;
 import com.back2261.applicationservice.interfaces.dto.*;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
-import com.back2261.applicationservice.interfaces.request.MessageRequest;
 import com.back2261.applicationservice.interfaces.request.SendNotificationTokenRequest;
 import com.back2261.applicationservice.interfaces.response.*;
-import com.mongodb.BasicDBObject;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import io.github.GameBuddyDevs.backendlibrary.base.BaseBody;
 import io.github.GameBuddyDevs.backendlibrary.base.Status;
 import io.github.GameBuddyDevs.backendlibrary.enums.TransactionCode;
@@ -23,12 +14,9 @@ import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageBody;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 import io.github.GameBuddyDevs.backendlibrary.service.JwtService;
 import io.github.GameBuddyDevs.backendlibrary.util.Constants;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -40,14 +28,7 @@ public class DefaultApplicationService implements ApplicationService {
     private final AvatarsRepository avatarsRepository;
     private final AchievementsRepository achievementRepository;
     private final JwtService jwtService;
-    private final MongoClient mongoClient;
     private final NotificationService notificationService;
-
-    @Value("${spring.data.mongodb.database}")
-    private String mongoDbDatabase;
-
-    @Value("${spring.data.mongodb.collection}")
-    private String mongoDbCollection;
 
     @Override
     public UserInfoResponse getUserInfo(String userId) {
@@ -116,18 +97,13 @@ public class DefaultApplicationService implements ApplicationService {
     @Override
     public GamesResponse getGames() {
         List<Games> gamesList = gamesRepository.findAll();
-        GamesResponse gamesResponse = new GamesResponse();
-        GamesResponseBody body = new GamesResponseBody();
-        List<GamesDto> gamesDtoList = new ArrayList<>();
-        gamesList.forEach(games -> {
-            GamesDto gamesDto = new GamesDto();
-            BeanUtils.copyProperties(games, gamesDto);
-            gamesDtoList.add(gamesDto);
-        });
-        body.setGames(gamesDtoList);
-        gamesResponse.setBody(new BaseBody<>(body));
-        gamesResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
-        return gamesResponse;
+        return getGamesResponse(gamesList);
+    }
+
+    @Override
+    public GamesResponse getPopularGames() {
+        List<Games> gamesList = gamesRepository.findAllByIsPopularTrueOrderByAvgVoteDesc();
+        return getGamesResponse(gamesList);
     }
 
     @Override
@@ -470,138 +446,6 @@ public class DefaultApplicationService implements ApplicationService {
         return defaultMessageResponse;
     }
 
-    @Override
-    public DefaultMessageResponse saveMessageToMongo(String token, MessageRequest messageRequest) {
-        Gamer gamer = extractGamer(token);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
-        MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
-        Message message = new Message();
-        message.setMessageBody(messageRequest.getMessage());
-        message.setId(UUID.randomUUID().toString());
-        message.setSender(gamer.getUserId());
-        message.setReceiver(messageRequest.getReceiverId());
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        String dateString = dateFormat.format(new Date());
-        try {
-            Date date = dateFormat.parse(dateString);
-            message.setDate(date);
-        } catch (Exception e) {
-            throw new BusinessException(TransactionCode.DB_ERROR);
-        }
-        collection.insertOne(message);
-
-        DefaultMessageResponse defaultMessageResponse = new DefaultMessageResponse();
-        DefaultMessageBody body = new DefaultMessageBody("Message saved successfully");
-        defaultMessageResponse.setBody(new BaseBody<>(body));
-        defaultMessageResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
-        return defaultMessageResponse;
-    }
-
-    @Override
-    public ConversationResponse getUserConversation(String friendId, String token) {
-        Gamer gamer = extractGamer(token);
-        String userId = gamer.getUserId();
-        if (Objects.equals(gamer.getUserId(), friendId)) {
-            throw new BusinessException(TransactionCode.SAME_IDS); // Kendin ile konuşma yapamazsın
-        }
-        Gamer friend = getGamerFromId(friendId);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
-        MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
-        BasicDBObject query = new BasicDBObject();
-        query.put("sender", userId);
-        query.put("receiver", friend.getUserId());
-        BasicDBObject query2 = new BasicDBObject();
-        query2.put("sender", friend.getUserId());
-        query2.put("receiver", userId);
-        FindIterable<Message> sendedMessages = collection.find(query);
-        FindIterable<Message> recievedMessages = collection.find(query2);
-        List<Message> messageList = new ArrayList<>();
-        sendedMessages.into(messageList);
-        recievedMessages.into(messageList);
-
-        List<ConversationDto> conversationDtoList = new ArrayList<>();
-        for (Message message : messageList) {
-            ConversationDto conversationDto = new ConversationDto();
-            BeanUtils.copyProperties(message, conversationDto);
-            conversationDto.setMessage(message.getMessageBody());
-            conversationDtoList.add(conversationDto);
-        }
-        conversationDtoList.sort(Comparator.comparing(ConversationDto::getDate));
-
-        ConversationResponse conversationResponse = new ConversationResponse();
-        ConversationResponseBody body = new ConversationResponseBody();
-        body.setConversations(conversationDtoList);
-        conversationResponse.setBody(new BaseBody<>(body));
-        conversationResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
-        return conversationResponse;
-    }
-
-    @Override
-    public InboxResponse getInbox(String token) {
-        Gamer gamer = extractGamer(token);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(mongoDbDatabase);
-        MongoCollection<Message> collection = mongoDatabase.getCollection(mongoDbCollection, Message.class);
-        List<Message> lastSentMessages = new ArrayList<>();
-        List<String> receivers = collection
-                .distinct("receiver", String.class)
-                .filter(eq("sender", gamer.getUserId()))
-                .into(new ArrayList<>());
-        List<String> senders = collection
-                .distinct("sender", String.class)
-                .filter(eq("receiver", gamer.getUserId()))
-                .into(new ArrayList<>());
-        Set<String> total = new HashSet<>();
-        total.addAll(receivers);
-        total.addAll(senders);
-
-        for (String user : total) {
-            BasicDBObject query = new BasicDBObject();
-            query.put("receiver", gamer.getUserId());
-            query.put("sender", user);
-            BasicDBObject query2 = new BasicDBObject();
-            query2.put("sender", gamer.getUserId());
-            query2.put("receiver", user);
-            Message receivedMessage =
-                    collection.find(query).sort(descending("date")).first();
-            Message sentMessage =
-                    collection.find(query2).sort(descending("date")).first();
-
-            if (receivedMessage != null && sentMessage != null) {
-                if (receivedMessage.getDate().compareTo(sentMessage.getDate()) > 0) {
-                    lastSentMessages.add(receivedMessage);
-                } else {
-                    lastSentMessages.add(sentMessage);
-                }
-            } else {
-                lastSentMessages.add(receivedMessage == null ? sentMessage : receivedMessage);
-            }
-        }
-
-        List<InboxDto> inboxDtoList = new ArrayList<>();
-        for (Message message : lastSentMessages) {
-            InboxDto inboxDto = new InboxDto();
-            Gamer user;
-            if (message.getSender().equals(gamer.getUserId())) {
-                user = getGamerFromId(message.getReceiver());
-            } else {
-                user = getGamerFromId(message.getSender());
-            }
-            inboxDto.setUserId(user.getUserId());
-            inboxDto.setUsername(user.getGamerUsername());
-            Avatars avatar = avatarsRepository.findById(user.getAvatar()).orElse(new Avatars());
-            inboxDto.setAvatar(avatar.getImage());
-            inboxDto.setLastMessage(message.getMessageBody());
-            inboxDto.setLastMessageTime(String.valueOf(message.getDate()));
-            inboxDtoList.add(inboxDto);
-        }
-        InboxResponse inboxResponse = new InboxResponse();
-        InboxResponseBody body = new InboxResponseBody();
-        body.setInboxList(inboxDtoList);
-        inboxResponse.setBody(new BaseBody<>(body));
-        inboxResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
-        return inboxResponse;
-    }
-
     private void setAchievementAndSendNotification(Gamer gamer, Achievements achievement) {
         gamer.getGamerEarnedAchievements().add(achievement);
         SendNotificationTokenRequest tokenRequest = new SendNotificationTokenRequest();
@@ -648,6 +492,17 @@ public class DefaultApplicationService implements ApplicationService {
             BeanUtils.copyProperties(keywords, keywordsDto);
             keywordsDtoList.add(keywordsDto);
         }
+    }
+
+    private GamesResponse getGamesResponse(List<Games> gamesList) {
+        GamesResponse gamesResponse = new GamesResponse();
+        GamesResponseBody body = new GamesResponseBody();
+        List<GamesDto> gamesDtoList = new ArrayList<>();
+        mapGamesToDto(gamesList, gamesDtoList);
+        body.setGames(gamesDtoList);
+        gamesResponse.setBody(new BaseBody<>(body));
+        gamesResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return gamesResponse;
     }
 
     private void mapGamesToDto(List<Games> gamesList, List<GamesDto> gamesDtoList) {

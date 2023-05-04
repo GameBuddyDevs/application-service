@@ -26,6 +26,7 @@ public class Games implements Serializable {
     private String category;
     private Float avgVote;
     private String description;
+    private Boolean isPopular;
 
     @ManyToMany(mappedBy = "likedgames")
     private Set<Gamer> gamers;

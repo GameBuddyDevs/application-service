@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.back2261.applicationservice.domain.service.DefaultApplicationService;
 import com.back2261.applicationservice.interfaces.dto.*;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
-import com.back2261.applicationservice.interfaces.request.MessageRequest;
 import com.back2261.applicationservice.interfaces.response.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.GameBuddyDevs.backendlibrary.base.BaseBody;
@@ -15,7 +14,6 @@ import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageBody;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 import io.github.GameBuddyDevs.backendlibrary.service.JwtService;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -144,6 +142,38 @@ class ApplicationControllerTest {
         Mockito.when(defaultApplicationService.getGames()).thenReturn(gamesResponse);
 
         var request = MockMvcRequestBuilders.get("/application/get/games").contentType("application/json");
+        var response = mockMvc.perform(request)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+        String responseJson = response.getResponse().getContentAsString();
+
+        GamesResponse responseObj = objectMapper.readValue(responseJson, GamesResponse.class);
+        assertEquals(200, response.getResponse().getStatus());
+        assertEquals(2, responseObj.getBody().getData().getGames().size());
+    }
+
+    @Test
+    void testGetPopularGames_whenRequested_shouldReturnPopularGames() throws Exception {
+        GamesResponse gamesResponse = new GamesResponse();
+        GamesResponseBody body = new GamesResponseBody();
+        List<GamesDto> games = new ArrayList<>();
+        GamesDto game = new GamesDto();
+        game.setGameId("test");
+        game.setAvgVote(7.7F);
+        game.setGameName("test");
+        game.setCategory("test");
+        game.setGameIcon("test");
+        game.setDescription("test");
+        games.add(game);
+        games.add(new GamesDto());
+        body.setGames(games);
+        gamesResponse.setBody(new BaseBody<>(body));
+
+        Mockito.when(defaultApplicationService.getPopularGames()).thenReturn(gamesResponse);
+
+        var request =
+                MockMvcRequestBuilders.get("/application/get/popular/games").contentType("application/json");
         var response = mockMvc.perform(request)
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -412,57 +442,6 @@ class ApplicationControllerTest {
                 .thenReturn(defaultMessageResponse);
 
         var request = MockMvcRequestBuilders.post("/application/send/friend")
-                .contentType("application/json")
-                .header("Authorization", "Bearer " + token)
-                .content(objectMapper.writeValueAsString(friendRequest));
-        var response = mockMvc.perform(request)
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertEquals(200, response.getResponse().getStatus());
-    }
-
-    @Test
-    void testSaveMessageToMongo_whenValidRequestProvided_shouldReturnSuccessMessage() throws Exception {
-        MessageRequest messageRequest = new MessageRequest();
-        messageRequest.setMessage("test");
-        messageRequest.setReceiverId("test");
-
-        Mockito.when(defaultApplicationService.saveMessageToMongo(token, messageRequest))
-                .thenReturn(defaultMessageResponse);
-
-        var request = MockMvcRequestBuilders.post("/application/save/message")
-                .contentType("application/json")
-                .header("Authorization", "Bearer " + token)
-                .content(objectMapper.writeValueAsString(messageRequest));
-        var response = mockMvc.perform(request)
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertEquals(200, response.getResponse().getStatus());
-    }
-
-    @Test
-    void testGetMessages_whenValidIdProvided_shouldReturnMessageHistory() throws Exception {
-        String friendId = "test";
-        ConversationResponse conversationResponse = new ConversationResponse();
-        ConversationResponseBody body = new ConversationResponseBody();
-        List<ConversationDto> conversationDtos = new ArrayList<>();
-        ConversationDto conversationDto = new ConversationDto();
-        conversationDto.setMessage("test");
-        conversationDto.setDate(new Date());
-        conversationDto.setSender("test");
-        conversationDtos.add(conversationDto);
-        conversationDtos.add(conversationDto);
-        body.setConversations(conversationDtos);
-        conversationResponse.setBody(new BaseBody<>(body));
-
-        Mockito.when(defaultApplicationService.getUserConversation(friendId, token))
-                .thenReturn(conversationResponse);
-
-        var request = MockMvcRequestBuilders.get("/application/get/messages/" + friendId)
                 .contentType("application/json")
                 .header("Authorization", "Bearer " + token)
                 .content(objectMapper.writeValueAsString(friendRequest));

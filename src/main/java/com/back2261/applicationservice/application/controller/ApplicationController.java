@@ -2,12 +2,10 @@ package com.back2261.applicationservice.application.controller;
 
 import com.back2261.applicationservice.domain.service.ApplicationService;
 import com.back2261.applicationservice.interfaces.request.FriendRequest;
-import com.back2261.applicationservice.interfaces.request.MessageRequest;
 import com.back2261.applicationservice.interfaces.response.*;
 import io.github.GameBuddyDevs.backendlibrary.interfaces.DefaultMessageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import java.text.ParseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +36,11 @@ public class ApplicationController {
     @GetMapping("/get/games")
     public ResponseEntity<GamesResponse> getGames() {
         return new ResponseEntity<>(applicationService.getGames(), HttpStatus.OK);
+    }
+
+    @GetMapping("/get/popular/games")
+    public ResponseEntity<GamesResponse> getPopularGames() {
+        return new ResponseEntity<>(applicationService.getPopularGames(), HttpStatus.OK);
     }
 
     @GetMapping("/get/avatars")
@@ -136,28 +139,5 @@ public class ApplicationController {
             @Valid @RequestBody FriendRequest sendFriendRequest) {
         return new ResponseEntity<>(
                 applicationService.sendFriendRequest(sendFriendRequest, token.substring(7)), HttpStatus.OK);
-    }
-
-    @PostMapping("/save/message")
-    public ResponseEntity<DefaultMessageResponse> saveMessageToMongo(
-            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
-            @Valid @RequestBody MessageRequest messageRequest)
-            throws ParseException {
-        return new ResponseEntity<>(
-                applicationService.saveMessageToMongo(token.substring(7), messageRequest), HttpStatus.OK);
-    }
-
-    @GetMapping("/get/messages/{friendId}")
-    public ResponseEntity<ConversationResponse> getMessages(
-            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
-            @Valid @PathVariable String friendId) {
-        return new ResponseEntity<>(
-                applicationService.getUserConversation(friendId, token.substring(7)), HttpStatus.OK);
-    }
-
-    @GetMapping("/get/inbox")
-    public ResponseEntity<InboxResponse> getInbox(
-            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token) {
-        return new ResponseEntity<>(applicationService.getInbox(token.substring(7)), HttpStatus.OK);
     }
 }

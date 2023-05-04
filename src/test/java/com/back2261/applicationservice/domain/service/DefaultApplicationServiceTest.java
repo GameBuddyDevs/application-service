@@ -116,6 +116,18 @@ class DefaultApplicationServiceTest {
     }
 
     @Test
+    void testGetPopularGames_whenCalled_ReturnPopularGames() {
+        List<Games> games = new ArrayList<>();
+        games.add(new Games());
+        games.add(new Games());
+
+        Mockito.when(gamesRepository.findAllByIsPopularTrueOrderByAvgVoteDesc()).thenReturn(games);
+        GamesResponse result = defaultApplicationService.getPopularGames();
+        assertEquals(2, result.getBody().getData().getGames().size());
+        assertEquals("100", result.getStatus().getCode());
+    }
+
+    @Test
     void testGetAvatars_whenCalled_ReturnAvatars() {
         Gamer gamer = getGamer();
         Avatars avatars = new Avatars();
