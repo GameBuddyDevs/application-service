@@ -36,7 +36,7 @@ public class Gamer implements UserDetails {
 
     private String pwd;
     private String gender;
-    private Boolean isBlocked = false;
+    private Boolean isBlocked;
     private String fcmToken;
     private Integer coin;
 
@@ -128,7 +128,7 @@ public class Gamer implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !isBlocked;
     }
 
     @Override
