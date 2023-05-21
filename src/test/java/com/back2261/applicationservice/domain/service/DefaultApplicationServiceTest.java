@@ -432,6 +432,7 @@ class DefaultApplicationServiceTest {
 
         Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
         Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+        Mockito.when(avatarsRepository.findById(Mockito.any(UUID.class))).thenReturn(Optional.of(new Avatars()));
 
         FriendsResponse result = defaultApplicationService.getFriends(token);
         assertEquals(2, result.getBody().getData().getFriends().size());
@@ -446,6 +447,7 @@ class DefaultApplicationServiceTest {
 
         Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
         Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+        Mockito.when(avatarsRepository.findById(Mockito.any(UUID.class))).thenReturn(Optional.of(new Avatars()));
 
         FriendsResponse result = defaultApplicationService.getWaitingFriends(token);
         assertEquals(2, result.getBody().getData().getFriends().size());
@@ -460,6 +462,7 @@ class DefaultApplicationServiceTest {
 
         Mockito.when(jwtService.extractUsername(Mockito.anyString())).thenReturn("test@test.com");
         Mockito.when(gamerRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(gamer));
+        Mockito.when(avatarsRepository.findById(Mockito.any(UUID.class))).thenReturn(Optional.of(new Avatars()));
 
         FriendsResponse result = defaultApplicationService.getBlockedFriends(token);
         assertEquals(2, result.getBody().getData().getFriends().size());

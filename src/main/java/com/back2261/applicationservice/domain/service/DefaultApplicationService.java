@@ -518,7 +518,11 @@ public class DefaultApplicationService implements ApplicationService {
             GamerDto friendDto = new GamerDto();
             BeanUtils.copyProperties(friend, friendDto);
             friendDto.setUsername(friend.getGamerUsername());
-            friendDto.setAvatar(friend.getAvatar().toString());
+            String avatar = avatarsRepository
+                    .findById(friend.getAvatar())
+                    .orElse(new Avatars())
+                    .getImage();
+            friendDto.setAvatar(avatar);
             friendDtoList.add(friendDto);
         }
     }
