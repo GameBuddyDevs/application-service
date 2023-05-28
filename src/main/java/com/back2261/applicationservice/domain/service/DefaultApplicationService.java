@@ -101,6 +101,20 @@ public class DefaultApplicationService implements ApplicationService {
     }
 
     @Override
+    public GameResponse getGame(String gameId) {
+        Games game =
+                gamesRepository.findById(gameId).orElseThrow(() -> new BusinessException(TransactionCode.DB_ERROR));
+        GamesDto gamesDto = new GamesDto();
+        BeanUtils.copyProperties(game, gamesDto);
+        GameResponse gameResponse = new GameResponse();
+        GameResponseBody body = new GameResponseBody();
+        body.setGameData(gamesDto);
+        gameResponse.setBody(new BaseBody<>(body));
+        gameResponse.setStatus(new Status(TransactionCode.DEFAULT_100));
+        return gameResponse;
+    }
+
+    @Override
     public GamesResponse getPopularGames() {
         List<Games> gamesList = gamesRepository.findAllByIsPopularTrueOrderByAvgVoteDesc();
         return getGamesResponse(gamesList);

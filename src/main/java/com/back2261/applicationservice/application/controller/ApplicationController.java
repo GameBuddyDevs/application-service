@@ -38,6 +38,13 @@ public class ApplicationController {
         return new ResponseEntity<>(applicationService.getGames(), HttpStatus.OK);
     }
 
+    @GetMapping("/get/game/{gameId}")
+    public ResponseEntity<GameResponse> getGame(
+            @Valid @RequestHeader(AUTHORIZATION) @NotBlank(message = AUTH_MESSAGE) String token,
+            @Valid @PathVariable String gameId) {
+        return new ResponseEntity<>(applicationService.getGame(gameId), HttpStatus.OK);
+    }
+
     @GetMapping("/get/popular/games")
     public ResponseEntity<GamesResponse> getPopularGames() {
         return new ResponseEntity<>(applicationService.getPopularGames(), HttpStatus.OK);

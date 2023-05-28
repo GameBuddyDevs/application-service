@@ -12,6 +12,8 @@ public interface ApplicationService {
 
     GamesResponse getGames();
 
+    GameResponse getGame(String gameId);
+
     GamesResponse getPopularGames();
 
     AvatarsResponse getAvatars(String token);
