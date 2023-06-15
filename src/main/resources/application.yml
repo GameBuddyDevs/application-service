@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://l2.eren.wtf:5432/gamebuddydb
-    username: gamebuddy
-    password: 3uT4}dpjK2PUk2#n
+    url: # enter jdbc url
+    username: # enter username
+    password: # enter password
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -11,7 +11,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        default_schema: schappl
+        default_schema: # enter schema name
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
@@ -22,7 +22,7 @@ springdoc:
     path: /api-docs
 
 notification-service:
-  url: http://l2.eren.wtf:4564
+  url: # enter notification service url
 
 feign:
   client:
