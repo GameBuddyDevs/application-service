@@ -48,7 +48,7 @@ public class ControllerExceptionHandler {
     }
 
     @ExceptionHandler(BusinessException.class)
-    public final ResponseEntity<DefaultMessageResponse> handleKFBusinessException(
+    public final ResponseEntity<DefaultMessageResponse> handleCustomBusinessException(
             BusinessException ex, HttpServletRequest request) {
         try {
             DefaultMessageResponse response = new DefaultMessageResponse();
